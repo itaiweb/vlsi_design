@@ -76,7 +76,14 @@ int main(int argc, char **argv) {
 	
 	
 	// section a
-	fv << "The number of nodes in the top level cell is: " << (topCell->getNodes()).size() << endl; // TODO: check definition of nodes 
+	int aCnt = 0;
+	for(auto aItr = topCell->getNodes().begin(); aItr != topCell->getNodes().end(); aItr++){
+		if(aItr->first == "VDD" || aItr->first == "VSS"){
+			continue;
+		}
+		aCnt++;
+	}
+	fv << "The number of nodes in the top level cell is: " << aCnt << endl; // TODO: check definition of nodes 
 
 	// section b
 	fv << "The number of instances in the top level cell is: " << (topCell->getInstances()).size() << endl;
