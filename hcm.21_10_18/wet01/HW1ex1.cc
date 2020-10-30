@@ -2,15 +2,16 @@
 #include <signal.h>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 #include "hcm.h"
 #include "flat.h"
-
+void dfs(hcmCell* topCell, string name, int dep);
 using namespace std;
 
 bool verbose = false;
-
+vector <string> globalDeepestVec;
+int globalMaxDeep = 0;
 ///////////////////////////////////////////////////////////////////////////
-
 int main(int argc, char **argv) {
 	int argIdx = 1;
 	int anyErr = 0;
@@ -73,7 +74,74 @@ int main(int argc, char **argv) {
 	
 	fv << "file name: " << fileName << endl;
 	
-	/* enter your code here */
+	
+	// section a
+	fv << "The number of nodes in the top level cell is: " << (topCell->getNodes()).size() << endl; // TODO: check definition of nodes 
+
+	// section b
+	fv << "The number of instances in the top level cell is: " << (topCell->getInstances()).size() << endl;
+
+	//section c 
+	//TODO: check forum for answers 
+
+	//section d
+	int and4Cnt = 0;
+	map< std::string, hcmInstance* >::iterator it = flatCell->getInstances().begin();
+	while (it != flatCell->getInstances().end()){
+		string name = it->second->masterCell()->getName();
+		if (name == "and4")
+		{
+			and4Cnt++;
+		}
+		it++;
+	}
+	fv << "The number of instances of cell and4 in the entire hierarchy is: " << and4Cnt << endl;
+	
+	//section e
+	dfs(topCell, topCell->getName(), 0);
+	fv << "There are " << globalMaxDeep << " of heirarchy traverses" << endl;
+
+	//section f
+	//cout << "before sort" << endl;
+	sort(globalDeepestVec.begin(), globalDeepestVec.end());
+	//cout << "after sort" << endl;
+	vector<string>::iterator nodeIt = globalDeepestVec.begin();
+	while (nodeIt != globalDeepestVec.end())
+	{
+		fv << nodeIt->c_str() << endl;
+		nodeIt++;
+	}
+	
+
+
+	
+
 
 	return(0);
+}
+
+
+void dfs(hcmCell* topCell, string name, int dep){
+	//cout << topCell->getName() << endl;
+	map< std::string, hcmInstance* >::iterator instIt = topCell->getInstances().begin();
+	while (instIt != topCell->getInstances().end()){
+		dfs(instIt->second->masterCell(), name + "/" + instIt->first, dep + 1);
+		instIt++;
+	}
+	//cout << topCell->getName() << ": ended loop" << endl;
+	if (dep >= globalMaxDeep){
+		if(dep > globalMaxDeep){
+			globalMaxDeep = dep;
+			globalDeepestVec.clear();
+		}
+		map< std::string, hcmNode* >::iterator nodeIt = topCell->getNodes().begin();
+		while(nodeIt != topCell->getNodes().end()){
+			if(nodeIt->first == "VDD" || nodeIt->first == "VSS"){
+				nodeIt++;
+				continue;
+			}
+			globalDeepestVec.push_back(name + "/" + nodeIt->first);
+			nodeIt++;
+		}
+	}
 }
