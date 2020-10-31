@@ -11,6 +11,7 @@ using namespace std;
 bool verbose = false;
 vector <string> globalDeepestVec;
 int globalMaxDeep = 0;
+int and4FoldedGlobal = 0;
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 	int argIdx = 1;
@@ -89,24 +90,26 @@ int main(int argc, char **argv) {
 	fv << "The number of instances in the top level cell is: " << (topCell->getInstances()).size() << endl;
 
 	//section c 
-	//TODO: check forum for answers 
+	//TODO: check forum for answers
+	dfs(topCell, topCell->getName(), 0);
+	fv << "The number of instances of cell and4 in the folded model is: " << and4FoldedGlobal << endl;
 
 	//section d
-	int and4Cnt = 0;
+	int and4FlatCnt = 0;
 	map< std::string, hcmInstance* >::iterator it = flatCell->getInstances().begin();
 	while (it != flatCell->getInstances().end()){
 		string name = it->second->masterCell()->getName();
 		if (name == "and4")
 		{
-			and4Cnt++;
+			and4FlatCnt++;
 		}
 		it++;
 	}
-	fv << "The number of instances of cell and4 in the entire hierarchy is: " << and4Cnt << endl;
+	fv << "The number of instances of cell and4 in the entire hierarchy is: " << and4FlatCnt << endl;
 	
 	//section e
-	dfs(topCell, topCell->getName(), 0);
-	fv << "There are " << globalMaxDeep << " of heirarchy traverses" << endl;
+	
+	fv << "There are " << globalMaxDeep << " levels of heirarchy traverses" << endl;
 
 	//section f
 	//cout << "before sort" << endl;
@@ -118,7 +121,9 @@ int main(int argc, char **argv) {
 		fv << nodeIt->c_str() << endl;
 		nodeIt++;
 	}
-	
+	for (auto i = flatCell->getNodes().begin(); i != flatCell->getNodes().end(); i++){
+		printf("%s\n", i->first.c_str());
+	}
 
 
 	
@@ -136,6 +141,8 @@ void dfs(hcmCell* topCell, string name, int dep){
 		instIt++;
 	}
 	//cout << topCell->getName() << ": ended loop" << endl;
+	if (topCell->getName() == "and4")
+		and4FoldedGlobal++;
 	if (dep >= globalMaxDeep){
 		if(dep > globalMaxDeep){
 			globalMaxDeep = dep;
@@ -152,3 +159,4 @@ void dfs(hcmCell* topCell, string name, int dep){
 		}
 	}
 }
+

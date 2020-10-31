@@ -10,7 +10,7 @@ all: gl_stat gl_rank
 gl_stat: HW1ex1.o $(HCMPATH)/flattener/flat.o
 	g++ -o $@ $^ $(LDFLAGS)
 
-gl_rank: HW1ex2.o
+gl_rank: HW1ex2.o $(HCMPATH)/flattener/flat.o
 	g++ -o $@ $^ $(LDFLAGS)
  
 clean: 
