@@ -4,7 +4,8 @@
 #include <fstream>
 #include "hcm.h"
 #include "flat.h"
-
+#include <queue>
+#include <algorithm>
 using namespace std;
 
 bool verbose = false;
@@ -12,6 +13,10 @@ vector<hcmPort*> getInputPorts(hcmCell *topCell);
 void topologicalOrdering(hcmCell* flatCell);
 void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted);
 vector<hcmInstPort*> findOutput(map<string, hcmInstPort*> &instPorts);
+void setRank(hcmInstance* inst);
+void RankPropInit(hcmCell* flatCell);
+vector<hcmInstance*> findAdjInst(hcmInstance* driver);
+bool cmp(const pair<int, string> &a, const pair<int, string> &b);
 ///////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv) {
@@ -76,13 +81,91 @@ int main(int argc, char **argv) {
 	/* enter your code here */
 
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
-	vector<hcmPort*> inPorts = flatCell->getPorts();
-	cout << inPorts[0]->getName() << endl;
-	topologicalOrdering(flatCell);
-	
+	RankPropInit(flatCell);
+
+	vector<hcmPort*> inPorts = getInputPorts(flatCell);
+	for (auto port = inPorts.begin(); port != inPorts.end(); port ++){
+		for( auto instPort = (*port)->owner()->getInstPorts().begin(); instPort != (*port)->owner()->getInstPorts().end(); instPort++){
+			setRank(instPort->second->getInst());
+		}	
+	}
+
+	vector<pair<int, string>> sortedVec;
+
+	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
+		int rank;
+		itr->second->getProp("rank", rank);
+		// cout << rank << "\t" << itr->first << endl;
+		sortedVec.push_back(make_pair(rank, itr->first));
+	}
+	sort(sortedVec.begin(), sortedVec.end(), cmp);
+	for(auto itr = sortedVec.begin(); itr != sortedVec.end(); itr++){
+		cout << itr->first << "\t" << itr->second << endl;
+	}
+
 	return(0);
 }
 
+
+void RankPropInit(hcmCell* flatCell){
+	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
+		itr->second->setProp("rank", 0);
+	}
+}
+
+
+void setRank(hcmInstance* inst){
+	queue <hcmInstance* > instQ;
+	instQ.push(inst);
+	int rank;
+	while(!instQ.empty()){
+		hcmInstance* driver = instQ.front();
+		instQ.pop();
+		driver->getProp("rank", rank);
+		vector<hcmInstance*> adjInst = findAdjInst(driver);
+		for(auto instItr = adjInst.begin(); instItr != adjInst.end(); instItr++){
+			int adjRank;
+			(*instItr)->getProp("rank", adjRank);
+			if(adjRank < rank + 1){
+				(*instItr)->setProp("rank", rank + 1);
+				instQ.push(*instItr);
+			}
+		}
+	}
+	
+}
+
+vector<hcmInstance*> findAdjInst(hcmInstance* driver){
+	vector<hcmInstance*> res;
+	vector<hcmInstPort*> instOut = findOutput(driver->getInstPorts());
+	for(auto instPort = instOut.begin(); instPort != instOut.end(); instPort++){
+		hcmNode* node = (*instPort)->getNode();
+		for(auto innerInstPort = node->getInstPorts().begin(); innerInstPort != node->getInstPorts().end(); innerInstPort++){
+			if(innerInstPort->second->getPort()->getDirection() == IN){
+				res.push_back(innerInstPort->second->getInst());
+			}
+		}
+	}
+	return res;
+}
+
+bool cmp(const pair<int, string> &a, const pair<int, string> &b){
+	if( a.first < b.first){
+		return true;
+	}
+	else if(a.first == b.first){
+		if(a.second < b.second){
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
+//functions:
 void topologicalOrdering(hcmCell* flatCell){	
 	vector<hcmPort*> inPorts = getInputPorts(flatCell);
 	vector<hcmInstance*> topoSorted;
