@@ -5,7 +5,9 @@
 #include <algorithm>
 #include "hcm.h"
 #include "flat.h"
+void setVisitProp(hcmCell* topCell);
 void dfs(hcmCell* topCell, string name, int dep);
+void foldedDfs(hcmCell* topCell, int & and4Folded);
 using namespace std;
 
 bool verbose = false;
@@ -75,7 +77,7 @@ int main(int argc, char **argv) {
 	
 	fv << "file name: " << fileName << endl;
 	
-	
+
 	// section a
 	int aCnt = 0;
 	for(auto aItr = topCell->getNodes().begin(); aItr != topCell->getNodes().end(); aItr++){
@@ -84,15 +86,16 @@ int main(int argc, char **argv) {
 		}
 		aCnt++;
 	}
-	fv << "The number of nodes in the top level cell is: " << aCnt << endl; // TODO: check definition of nodes 
+	fv << "a: " << aCnt << endl;
 
 	// section b
-	fv << "The number of instances in the top level cell is: " << (topCell->getInstances()).size() << endl;
+	fv << "b: " << (topCell->getInstances()).size() << endl;
 
 	//section c 
-	//TODO: check forum for answers
-	dfs(topCell, topCell->getName(), 0);
-	fv << "The number of instances of cell and4 in the folded model is: " << and4FoldedGlobal << endl;
+	int and4Folded = 0;
+	setVisitProp(topCell); //setting all master cells prop visited = 0
+	foldedDfs(topCell, and4Folded);
+	fv << "c: " << and4Folded << endl;
 
 	//section d
 	int and4FlatCnt = 0;
@@ -105,44 +108,55 @@ int main(int argc, char **argv) {
 		}
 		it++;
 	}
-	fv << "The number of instances of cell and4 in the entire hierarchy is: " << and4FlatCnt << endl;
+	fv << "d: " << and4FlatCnt << endl;
 	
 	//section e
-	
-	fv << "There are " << globalMaxDeep << " levels of heirarchy traverses" << endl;
+	dfs(topCell, "", 0);
+	fv << "e:" << globalMaxDeep << endl;
 
 	//section f
-	//cout << "before sort" << endl;
 	sort(globalDeepestVec.begin(), globalDeepestVec.end());
-	//cout << "after sort" << endl;
 	vector<string>::iterator nodeIt = globalDeepestVec.begin();
 	while (nodeIt != globalDeepestVec.end())
 	{
+		nodeIt->erase(0,1);
 		fv << nodeIt->c_str() << endl;
 		nodeIt++;
 	}
-	for (auto i = flatCell->getNodes().begin(); i != flatCell->getNodes().end(); i++){
-		printf("%s\n", i->first.c_str());
-	}
-
-
-	
-
 
 	return(0);
 }
 
+void setVisitProp(hcmCell*topCell){
+	topCell->setProp("visited", 0);
+	for(auto itr = topCell->getInstances().begin(); itr != topCell->getInstances().end(); itr++){
+		setVisitProp(itr->second->masterCell());
+	}
+}
+
+
+void foldedDfs(hcmCell* topCell, int & and4Folded){
+	int isVisit;
+	topCell->getProp("visited", isVisit);
+	if(isVisit){
+		return;
+	}
+	topCell->setProp("visited", 1);
+	for (auto itr = topCell->getInstances().begin(); itr != topCell->getInstances().end(); itr++){
+		if(itr->second->masterCell()->getName() == "and4"){
+			and4Folded++;
+		}
+		foldedDfs(itr->second->masterCell(), and4Folded);
+	}
+}
+
 
 void dfs(hcmCell* topCell, string name, int dep){
-	//cout << topCell->getName() << endl;
 	map< std::string, hcmInstance* >::iterator instIt = topCell->getInstances().begin();
 	while (instIt != topCell->getInstances().end()){
 		dfs(instIt->second->masterCell(), name + "/" + instIt->first, dep + 1);
 		instIt++;
 	}
-	//cout << topCell->getName() << ": ended loop" << endl;
-	if (topCell->getName() == "and4")
-		and4FoldedGlobal++;
 	if (dep >= globalMaxDeep){
 		if(dep > globalMaxDeep){
 			globalMaxDeep = dep;
@@ -159,4 +173,3 @@ void dfs(hcmCell* topCell, string name, int dep){
 		}
 	}
 }
-

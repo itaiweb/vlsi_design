@@ -11,6 +11,7 @@ bool verbose = false;
 vector<hcmPort*> getInputPorts(hcmCell *topCell);
 void topologicalOrdering(hcmCell* flatCell);
 void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted);
+vector<hcmInstPort*> findOutput(map<string, hcmInstPort*> &instPorts);
 ///////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv) {
@@ -76,6 +77,7 @@ int main(int argc, char **argv) {
 
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	vector<hcmPort*> inPorts = flatCell->getPorts();
+	cout << inPorts[0]->getName() << endl;
 	topologicalOrdering(flatCell);
 	
 	return(0);
@@ -89,6 +91,7 @@ void topologicalOrdering(hcmCell* flatCell){
 	}
 	map<string, hcmInstance*> instMap = flatCell->getInstances();
 	for (auto j = instMap.begin(); j != instMap.end(); j++){
+		//cout << "run dfs: " << j->first << endl;
 		dfs(j->second, topoSorted);
 	}
 	for (auto i = topoSorted.begin(); i != topoSorted.end(); i++)
@@ -106,8 +109,11 @@ void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted){
 	}
 	inst->setProp("visited", 1);
 	map<string, hcmInstPort*> instPorts = inst->getInstPorts();
-	for (auto j = instPorts.begin(); j != instPorts.end(); j++){
-		dfs(j->second->getInst(), topoSorted);
+	vector<hcmInstPort*> output = findOutput(instPorts);
+	for(auto i = output.begin(); i != output.end(); i++){
+		for (auto j = (*i)->getNode()->getInstPorts().begin(); j != (*i)->getNode()->getInstPorts().end(); j++){ //page 10 in tutorial. go throug all connections forward.
+			dfs(j->second->getInst(), topoSorted);
+		}
 	}
 	topoSorted.push_back(inst);
 	return;
@@ -123,4 +129,14 @@ vector<hcmPort*> getInputPorts(hcmCell *topCell){
 		}
 	}
 	return inPorts;
+}
+
+vector<hcmInstPort*> findOutput(map<string, hcmInstPort*> &instPorts){
+	vector<hcmInstPort*> outVec;
+	for (auto i = instPorts.begin(); i != instPorts.end(); i++){
+		if(i->second->getPort()->getDirection() == OUT){
+			outVec.push_back(i->second);
+		}
+	}
+	return outVec;
 }
