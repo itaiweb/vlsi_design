@@ -8,12 +8,12 @@
 void setVisitProp(hcmCell* topCell);
 void dfs(hcmCell* topCell, string name, int dep);
 void foldedDfs(hcmCell* topCell, int & and4Folded);
+void deepestReachDfs(hcmInstPort* instPort, int dep, int &globDep); 
 using namespace std;
 
 bool verbose = false;
 vector <string> globalDeepestVec;
 int globalMaxDeep = 0;
-int and4FoldedGlobal = 0;
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 	int argIdx = 1;
@@ -111,10 +111,18 @@ int main(int argc, char **argv) {
 	fv << "d: " << and4FlatCnt << endl;
 	
 	//section e
-	dfs(topCell, "", 0);
-	fv << "e:" << globalMaxDeep << endl;
+	int deepestReach = 1;
+	map<string, hcmNode*> toplevelNodes = topCell->getNodes();
+	for(auto nodeItr = toplevelNodes.begin(); nodeItr != toplevelNodes.end(); nodeItr++){
+		map<string, hcmInstPort*> instPorts = nodeItr->second->getInstPorts();
+		for(auto instPortItr = instPorts.begin(); instPortItr != instPorts.end(); instPortItr++){
+			deepestReachDfs(instPortItr->second, 2, deepestReach); 
+		}
+	}
+	fv << "e: " << deepestReach << endl;
 
 	//section f
+	dfs(topCell, "", 0);
 	sort(globalDeepestVec.begin(), globalDeepestVec.end());
 	vector<string>::iterator nodeIt = globalDeepestVec.begin();
 	while (nodeIt != globalDeepestVec.end())
@@ -171,5 +179,16 @@ void dfs(hcmCell* topCell, string name, int dep){
 			globalDeepestVec.push_back(name + "/" + nodeIt->first);
 			nodeIt++;
 		}
+	}
+}
+
+void deepestReachDfs(hcmInstPort* instPort, int dep, int & globDep){
+	hcmNode * node = instPort->getPort()->owner();
+	map<string, hcmInstPort*> instPorts = node->getInstPorts();
+	for(auto instPortItr = instPorts.begin(); instPortItr != instPorts.end(); instPortItr++) {
+		deepestReachDfs(instPortItr->second, dep + 1, globDep);
+	}
+	if (dep > globDep ){
+		globDep = dep;
 	}
 }

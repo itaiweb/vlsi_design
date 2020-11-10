@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 	}
 	sort(sortedVec.begin(), sortedVec.end(), cmp);
 	for(auto itr = sortedVec.begin(); itr != sortedVec.end(); itr++){
-		cout << itr->first << "\t" << itr->second << endl;
+		fv << itr->first << " " << itr->second << endl;
 	}
 
 	return(0);
@@ -132,7 +132,6 @@ void setRank(hcmInstance* inst){
 			}
 		}
 	}
-	
 }
 
 vector<hcmInstance*> findAdjInst(hcmInstance* driver){
@@ -166,7 +165,7 @@ bool cmp(const pair<int, string> &a, const pair<int, string> &b){
 
 
 //functions:
-void topologicalOrdering(hcmCell* flatCell){	
+/*void topologicalOrdering(hcmCell* flatCell){	
 	vector<hcmPort*> inPorts = getInputPorts(flatCell);
 	vector<hcmInstance*> topoSorted;
 	for( auto iter = flatCell->getInstances().begin(); iter != flatCell->getInstances().end(); iter++){
@@ -201,7 +200,7 @@ void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted){
 	topoSorted.push_back(inst);
 	return;
 }
-
+*/
 vector<hcmPort*> getInputPorts(hcmCell *topCell){
 	vector<hcmPort*> ports = topCell->getPorts();
 	vector<hcmPort*> inPorts;
