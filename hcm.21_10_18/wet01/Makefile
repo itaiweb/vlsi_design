@@ -1,7 +1,7 @@
 HCMPATH=$(shell pwd)/../
 
-CXXFLAGS=-Wall -pedantic -ggdb -O0 -fPIC -I$(HCMPATH)/include  -I$(HCMPATH)/flattener
-CFLAGS=  -Wall -pedantic -ggdb -O0 -fPIC -I$(HCMPATH)/include  -I$(HCMPATH)/flattener
+CXXFLAGS=-std=c++11 -Wall -pedantic -ggdb -O0 -fPIC -I$(HCMPATH)/include  -I$(HCMPATH)/flattener
+CFLAGS=  -std=c++11 -Wall -pedantic -ggdb -O0 -fPIC -I$(HCMPATH)/include  -I$(HCMPATH)/flattener
 CC=g++
 LDFLAGS=-L$(HCMPATH)/src -lhcm -Wl,-rpath=$(HCMPATH)/src
 
