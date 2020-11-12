@@ -82,12 +82,20 @@ int main(int argc, char **argv) {
 
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	RankPropInit(flatCell);
-
 	vector<hcmPort*> inPorts = getInputPorts(flatCell);
+
 	for (auto port = inPorts.begin(); port != inPorts.end(); port ++){
 		for( auto instPort = (*port)->owner()->getInstPorts().begin(); instPort != (*port)->owner()->getInstPorts().end(); instPort++){
 			setRank(instPort->second->getInst());
 		}	
+	}
+	for(auto iterInst = flatCell->getInstances().begin(); iterInst != flatCell->getInstances().end(); iterInst++){
+		for(auto iterInstPort = iterInst->second->getInstPorts().begin(); iterInstPort != iterInst->second->getInstPorts().end(); iterInstPort++){
+			if(iterInstPort->second->getNode()->getName() == "VDD" || iterInstPort->second->getNode()->getName() == "VSS"){
+				// cout << "NNNNNNNNNNOOOOOYYYYY" << endl;
+				setRank(iterInst->second);
+			}
+		}
 	}
 
 	vector<pair<int, string>> sortedVec;
@@ -110,6 +118,10 @@ int main(int argc, char **argv) {
 void RankPropInit(hcmCell* flatCell){
 	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
 		itr->second->setProp("rank", 0);
+		//NOY
+		// if(itr->second->getName() == "M5/addedBuf60"){
+		// 	cout << itr->second->getInstPorts().begin()->second->getNode()->getName() << endl;
+		// }
 	}
 }
 
@@ -123,6 +135,11 @@ void setRank(hcmInstance* inst){
 		instQ.pop();
 		driver->getProp("rank", rank);
 		vector<hcmInstance*> adjInst = findAdjInst(driver);
+		// if(driver->getName() == "M5/addedBuf60"){
+		// 	for(auto noy = adjInst.begin(); noy != adjInst.end(); noy++){
+		// 		cout << (*noy)->getName() << endl;
+		// 	}
+		// }
 		for(auto instItr = adjInst.begin(); instItr != adjInst.end(); instItr++){
 			int adjRank;
 			(*instItr)->getProp("rank", adjRank);
@@ -137,8 +154,16 @@ void setRank(hcmInstance* inst){
 vector<hcmInstance*> findAdjInst(hcmInstance* driver){
 	vector<hcmInstance*> res;
 	vector<hcmInstPort*> instOut = findOutput(driver->getInstPorts());
+	// if(driver->getName() == "M5/addedBuf44"){
+	// 	for(auto noy = instOut.begin(); noy != instOut.end(); noy++){
+	// 		cout << (*noy)->getName() << endl;
+	// 	}
+	// }
 	for(auto instPort = instOut.begin(); instPort != instOut.end(); instPort++){
 		hcmNode* node = (*instPort)->getNode();
+		// if(driver->getName() == "M5/addedBuf44"){
+		// 	cout << "output node is: " << node->getName() << endl;
+		// }
 		for(auto innerInstPort = node->getInstPorts().begin(); innerInstPort != node->getInstPorts().end(); innerInstPort++){
 			if(innerInstPort->second->getPort()->getDirection() == IN){
 				res.push_back(innerInstPort->second->getInst());
@@ -160,50 +185,13 @@ bool cmp(const pair<int, string> &a, const pair<int, string> &b){
 	return false;
 }
 
-
-
-
-
-//functions:
-/*void topologicalOrdering(hcmCell* flatCell){	
-	vector<hcmPort*> inPorts = getInputPorts(flatCell);
-	vector<hcmInstance*> topoSorted;
-	for( auto iter = flatCell->getInstances().begin(); iter != flatCell->getInstances().end(); iter++){
-		iter->second->setProp("visited", 0);
-	}
-	map<string, hcmInstance*> instMap = flatCell->getInstances();
-	for (auto j = instMap.begin(); j != instMap.end(); j++){
-		//cout << "run dfs: " << j->first << endl;
-		dfs(j->second, topoSorted);
-	}
-	for (auto i = topoSorted.begin(); i != topoSorted.end(); i++)
-	{
-		cout << (*i)->getName() << endl;
-	}
-	
-}
-
-void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted){
-	int visit;
-	inst->getProp("visited", visit);
-	if(visit){
-		return;
-	}
-	inst->setProp("visited", 1);
-	map<string, hcmInstPort*> instPorts = inst->getInstPorts();
-	vector<hcmInstPort*> output = findOutput(instPorts);
-	for(auto i = output.begin(); i != output.end(); i++){
-		for (auto j = (*i)->getNode()->getInstPorts().begin(); j != (*i)->getNode()->getInstPorts().end(); j++){ //page 10 in tutorial. go throug all connections forward.
-			dfs(j->second->getInst(), topoSorted);
-		}
-	}
-	topoSorted.push_back(inst);
-	return;
-}
-*/
 vector<hcmPort*> getInputPorts(hcmCell *topCell){
 	vector<hcmPort*> ports = topCell->getPorts();
 	vector<hcmPort*> inPorts;
+	// for(auto iter = topCell->getInstances().begin(); iter != topCell->getInstances().end(); iter++){
+		
+	// 	if(iter->second->getInstPort())
+	// }
 	for(auto iter = ports.begin(); iter != ports.end(); iter++){
 		if ((*iter)->getDirection() == IN)
 		{
