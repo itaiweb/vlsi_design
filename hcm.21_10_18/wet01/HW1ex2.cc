@@ -83,19 +83,17 @@ int main(int argc, char **argv) {
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	RankPropInit(flatCell);
 	vector<hcmPort*> inPorts = getInputPorts(flatCell);
-
+	vector <hcmInstance*> bfsSourceInsts;
 	for (auto port = inPorts.begin(); port != inPorts.end(); port ++){
 		for( auto instPort = (*port)->owner()->getInstPorts().begin(); instPort != (*port)->owner()->getInstPorts().end(); instPort++){
-			setRank(instPort->second->getInst());
+			bfsSourceInsts.push_back(instPort->second->getInst());
+			instPort->second->getInst()->setProp("rank", 0);
 		}	
 	}
-	for(auto iterInst = flatCell->getInstances().begin(); iterInst != flatCell->getInstances().end(); iterInst++){
-		for(auto iterInstPort = iterInst->second->getInstPorts().begin(); iterInstPort != iterInst->second->getInstPorts().end(); iterInstPort++){
-			if(iterInstPort->second->getNode()->getName() == "VDD" || iterInstPort->second->getNode()->getName() == "VSS"){
-				// cout << "NNNNNNNNNNOOOOOYYYYY" << endl;
-				setRank(iterInst->second);
-			}
-		}
+
+	//run BFS from each source that is connected directly to input ports
+	for(auto inst = bfsSourceInsts.begin(); inst != bfsSourceInsts.end(); inst++){
+		setRank(*inst);
 	}
 
 	vector<pair<int, string>> sortedVec;
@@ -117,7 +115,7 @@ int main(int argc, char **argv) {
 
 void RankPropInit(hcmCell* flatCell){
 	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
-		itr->second->setProp("rank", 0);
+		itr->second->setProp("rank", -1);
 		//NOY
 		// if(itr->second->getName() == "M5/addedBuf60"){
 		// 	cout << itr->second->getInstPorts().begin()->second->getNode()->getName() << endl;
