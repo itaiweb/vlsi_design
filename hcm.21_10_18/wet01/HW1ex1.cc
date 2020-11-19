@@ -5,15 +5,19 @@
 #include <algorithm>
 #include "hcm.h"
 #include "flat.h"
+
 void setVisitProp(hcmCell* topCell);
 void dfs(hcmCell* topCell, string name, int dep);
 void foldedDfs(hcmCell* topCell, int & and4Folded);
 void deepestReachDfs(hcmInstPort* instPort, int dep, int &globDep); 
+
 using namespace std;
 
+//globals:
 bool verbose = false;
 vector <string> globalDeepestVec;
 int globalMaxDeep = 0;
+
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 	int argIdx = 1;
@@ -78,7 +82,7 @@ int main(int argc, char **argv) {
 	fv << "file name: " << fileName << endl;
 	
 
-	// section a
+	// section a: find all nodes in top module. excluding global nodes.
 	int aCnt = 0;
 	for(auto aItr = topCell->getNodes().begin(); aItr != topCell->getNodes().end(); aItr++){
 		if(aItr->first == "VDD" || aItr->first == "VSS"){
@@ -88,16 +92,16 @@ int main(int argc, char **argv) {
 	}
 	fv << "a: " << aCnt << endl;
 
-	// section b
+	// section b: find number of instances in top level cell.
 	fv << "b: " << (topCell->getInstances()).size() << endl;
 
-	//section c 
+	//section c: find and4 instances in folded model.
 	int and4Folded = 0;
-	setVisitProp(topCell); //setting all master cells prop visited = 0
+	setVisitProp(topCell); //setting all master cells prop visited = 0.
 	foldedDfs(topCell, and4Folded);
 	fv << "c: " << and4Folded << endl;
 
-	//section d
+	//section d: find and4 instances in entire hierarchy, using flat cell.
 	int and4FlatCnt = 0;
 	map< std::string, hcmInstance* >::iterator it = flatCell->getInstances().begin();
 	while (it != flatCell->getInstances().end()){
@@ -110,7 +114,7 @@ int main(int argc, char **argv) {
 	}
 	fv << "d: " << and4FlatCnt << endl;
 	
-	//section e
+	//section e: find the deepest reach of a top level node.
 	int deepestReach = 1;
 	map<string, hcmNode*> toplevelNodes = topCell->getNodes();
 	for(auto nodeItr = toplevelNodes.begin(); nodeItr != toplevelNodes.end(); nodeItr++){
@@ -121,7 +125,7 @@ int main(int argc, char **argv) {
 	}
 	fv << "e: " << deepestReach << endl;
 
-	//section f
+	//section f: find hierarchical names of deepest reaching nodes.
 	dfs(topCell, "", 0);
 	sort(globalDeepestVec.begin(), globalDeepestVec.end());
 	vector<string>::iterator nodeIt = globalDeepestVec.begin();
@@ -135,6 +139,14 @@ int main(int argc, char **argv) {
 	return(0);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: setVisitProp
+// description:   Recursive function to set a "visit" property to all cells. 
+// 		  Initialize visit to zero.
+// inputs: 	  A master cell.
+// outputs: 	  None. Sets the property of the input cell.
+//////////////////////////////////////////////////////////////////////////
+
 void setVisitProp(hcmCell*topCell){
 	topCell->setProp("visited", 0);
 	for(auto itr = topCell->getInstances().begin(); itr != topCell->getInstances().end(); itr++){
@@ -142,6 +154,13 @@ void setVisitProp(hcmCell*topCell){
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: foldedDfs
+// description:   Recursive DFS to traverse the folded model, without 
+// 		  visiting the same master cell twice. Using the "visit" prop.
+// inputs: 	  A master cell and the and4 count.
+// outputs: 	  None. sets the counter.
+//////////////////////////////////////////////////////////////////////////
 
 void foldedDfs(hcmCell* topCell, int & and4Folded){
 	int isVisit;
@@ -158,6 +177,14 @@ void foldedDfs(hcmCell* topCell, int & and4Folded){
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: dfs
+// description:   Recursive DFS to traverse the folded model. When reaching 
+//		  a depth deeper than the current depth (held in global variable)
+//		  fill the global vector with the nodes names.
+// inputs: 	  The current top cell, the name of previous hierarchies the the current depth.
+// outputs: 	  None. sets global vector.
+//////////////////////////////////////////////////////////////////////////
 
 void dfs(hcmCell* topCell, string name, int dep){
 	map< std::string, hcmInstance* >::iterator instIt = topCell->getInstances().begin();
@@ -181,6 +208,14 @@ void dfs(hcmCell* topCell, string name, int dep){
 		}
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+// function name: deepestReachDfs
+// description:   Recursive DFS traversing the folded model, starting instance
+//		  ports connected to nodes in the top level only.
+// inputs: 	  Instance port, current depth, and deepest depth found.
+// outputs: 	  None. sets the global depth.
+//////////////////////////////////////////////////////////////////////////
 
 void deepestReachDfs(hcmInstPort* instPort, int dep, int & globDep){
 	hcmNode * node = instPort->getPort()->owner();

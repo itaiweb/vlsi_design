@@ -6,9 +6,9 @@
 #include "flat.h"
 #include <queue>
 #include <algorithm>
+
 using namespace std;
 
-bool verbose = false;
 vector<hcmPort*> getInputPorts(hcmCell *topCell);
 void topologicalOrdering(hcmCell* flatCell);
 void dfs(hcmInstance* inst, vector<hcmInstance*> & topoSorted);
@@ -17,6 +17,9 @@ void setRank(hcmInstance* inst);
 void RankPropInit(hcmCell* flatCell);
 vector<hcmInstance*> findAdjInst(hcmInstance* driver);
 bool cmp(const pair<int, string> &a, const pair<int, string> &b);
+
+// globals:
+bool verbose = false;
 ///////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv) {
@@ -78,8 +81,6 @@ int main(int argc, char **argv) {
 	
 	fv << "file name: " << fileName << endl;
 	
-	/* enter your code here */
-
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	RankPropInit(flatCell);
 	vector<hcmPort*> inPorts = getInputPorts(flatCell);
@@ -101,28 +102,36 @@ int main(int argc, char **argv) {
 	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
 		int rank;
 		itr->second->getProp("rank", rank);
-		// cout << rank << "\t" << itr->first << endl;
 		sortedVec.push_back(make_pair(rank, itr->first));
 	}
 	sort(sortedVec.begin(), sortedVec.end(), cmp);
 	for(auto itr = sortedVec.begin(); itr != sortedVec.end(); itr++){
+		if(itr->first == -1){ continue; }
 		fv << itr->first << " " << itr->second << endl;
 	}
 
 	return(0);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: RankPropInit
+// description:   Initialaize "rank" property to all instances to -1.
+// inputs:	  The flat model
+// outputs:	  None. sets rank.
+//////////////////////////////////////////////////////////////////////////
 
 void RankPropInit(hcmCell* flatCell){
 	for(auto itr = flatCell->getInstances().begin(); itr != flatCell->getInstances().end(); itr++){
 		itr->second->setProp("rank", -1);
-		//NOY
-		// if(itr->second->getName() == "M5/addedBuf60"){
-		// 	cout << itr->second->getInstPorts().begin()->second->getNode()->getName() << endl;
-		// }
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: setRank
+// description:   Use BFS to traverse flat model and set the ranks.
+// inputs:        Instances that are connected directly to outputs.
+// outputs:	  None. sets rank.
+//////////////////////////////////////////////////////////////////////////
 
 void setRank(hcmInstance* inst){
 	queue <hcmInstance* > instQ;
@@ -133,11 +142,6 @@ void setRank(hcmInstance* inst){
 		instQ.pop();
 		driver->getProp("rank", rank);
 		vector<hcmInstance*> adjInst = findAdjInst(driver);
-		// if(driver->getName() == "M5/addedBuf60"){
-		// 	for(auto noy = adjInst.begin(); noy != adjInst.end(); noy++){
-		// 		cout << (*noy)->getName() << endl;
-		// 	}
-		// }
 		for(auto instItr = adjInst.begin(); instItr != adjInst.end(); instItr++){
 			int adjRank;
 			(*instItr)->getProp("rank", adjRank);
@@ -149,19 +153,18 @@ void setRank(hcmInstance* inst){
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: findAdjInst
+// description:   Find all the receivers of a driver cell.
+// inputs:	  Driver cell instance.
+// outputs:	  Vector of driven instances.
+//////////////////////////////////////////////////////////////////////////
+
 vector<hcmInstance*> findAdjInst(hcmInstance* driver){
 	vector<hcmInstance*> res;
 	vector<hcmInstPort*> instOut = findOutput(driver->getInstPorts());
-	// if(driver->getName() == "M5/addedBuf44"){
-	// 	for(auto noy = instOut.begin(); noy != instOut.end(); noy++){
-	// 		cout << (*noy)->getName() << endl;
-	// 	}
-	// }
 	for(auto instPort = instOut.begin(); instPort != instOut.end(); instPort++){
 		hcmNode* node = (*instPort)->getNode();
-		// if(driver->getName() == "M5/addedBuf44"){
-		// 	cout << "output node is: " << node->getName() << endl;
-		// }
 		for(auto innerInstPort = node->getInstPorts().begin(); innerInstPort != node->getInstPorts().end(); innerInstPort++){
 			if(innerInstPort->second->getPort()->getDirection() == IN){
 				res.push_back(innerInstPort->second->getInst());
@@ -170,6 +173,13 @@ vector<hcmInstance*> findAdjInst(hcmInstance* driver){
 	}
 	return res;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// function name: cmp
+// description:   Function sent to sort, to compare a pair (int, string).
+// inputs:	  Two pairs to be compared.
+// outputs:	  Bool value indicating which input is bigger.
+//////////////////////////////////////////////////////////////////////////
 
 bool cmp(const pair<int, string> &a, const pair<int, string> &b){
 	if( a.first < b.first){
@@ -183,13 +193,16 @@ bool cmp(const pair<int, string> &a, const pair<int, string> &b){
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: getInputPorts  
+// description:   Find all the input ports of a given cell.
+// inputs:	  The top cell.
+// outputs:	  A vector of input ports.
+//////////////////////////////////////////////////////////////////////////
+
 vector<hcmPort*> getInputPorts(hcmCell *topCell){
 	vector<hcmPort*> ports = topCell->getPorts();
 	vector<hcmPort*> inPorts;
-	// for(auto iter = topCell->getInstances().begin(); iter != topCell->getInstances().end(); iter++){
-		
-	// 	if(iter->second->getInstPort())
-	// }
 	for(auto iter = ports.begin(); iter != ports.end(); iter++){
 		if ((*iter)->getDirection() == IN)
 		{
@@ -198,6 +211,13 @@ vector<hcmPort*> getInputPorts(hcmCell *topCell){
 	}
 	return inPorts;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// function name: findOutput
+// description:   Find all the output ports of a given instance.
+// inputs:  	  A map of instports.
+// outputs:	  A vector of output ports only.
+//////////////////////////////////////////////////////////////////////////
 
 vector<hcmInstPort*> findOutput(map<string, hcmInstPort*> &instPorts){
 	vector<hcmInstPort*> outVec;
