@@ -18,4 +18,4 @@ void gateProcessor(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 bool simulateGate(hcmInstance*);
 
 
-#endif _HELPER_H
+#endif

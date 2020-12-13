@@ -72,8 +72,11 @@ int main(int argc, char **argv) {
 	}
 	map<const hcmNodeCtx, bool, cmpNodeCtx> valByNodeCtx;
 	list<const hcmInstance*> noInsts;
+	for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
+		hcmNodeCtx nodeCtx(noInsts, (*nodeItr).second);
+		valByNodeCtx[nodeCtx] = false;
+	}
 	int t = 1;
-
 	hcmSigVec parser(signalTextFile, vectorTextFile, verbose);
 
 	set<string> signals;
@@ -84,12 +87,23 @@ int main(int argc, char **argv) {
 	while (parser.readVector() == 0) {
 		for(auto sigItr = signals.begin(); sigItr != signals.end(); sigItr++){
 			string name = (*sigItr);
-			bool val;
+			bool val = false;
 			parser.getSigValue(name, val);
 			flatCell->getNode(name)->setProp("value", val);
 			eventQ.push(make_pair(flatCell->getNode(name), val));
 		}
 		simulateVector(eventQ);
-
+		for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
+			string name = nodeItr->second->getName();
+			if(name == "VSS" || name == "VDD"){
+				continue;
+			}
+			hcmNodeCtx temp(noInsts, (*nodeItr).second);
+			bool currentVal;
+			nodeItr->second->getProp("value", currentVal);
+			valByNodeCtx[temp] = currentVal;
+			vcd.changeValue(&temp, currentVal);
+		}
+		vcd.changeTime(t++);
 	}
 }	
