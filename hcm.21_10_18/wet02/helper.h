@@ -12,7 +12,7 @@
 #include "hcmvcd.h"
 #include "hcmsigvec.h"
 
-void simulateVector(queue<pair<hcmNode*, bool>>&);
+void simulateVector(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 void eventProcessor(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 void gateProcessor(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 bool simulateGate(hcmInstance*);

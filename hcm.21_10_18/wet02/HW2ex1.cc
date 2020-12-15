@@ -5,6 +5,8 @@ using namespace std;
 //globals:
 bool verbose = false;
 
+bool debugFlag = 0;
+
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 	int argIdx = 1;
@@ -59,10 +61,25 @@ int main(int argc, char **argv) {
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	cout << "-I- Top cell flattened" << endl;
 	for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
-		(*nodeItr).second->setProp("value", false);
+		nodeItr->second->setProp("value", false);
+		nodeItr->second->setProp("prev_value", false);
 	}
+	queue<hcmInstance*> gateQ;
 	for(auto instItr = flatCell->getInstances().begin(); instItr != flatCell->getInstances().end(); instItr++){
-		(*instItr).second->setProp("inQueue", false);
+		//rest ff nor values.
+		if(instItr->second->getName().find("_iwnh_ff") != instItr->second->getName().npos){
+			for(auto portItr = instItr->second->getInstPorts().begin(); portItr != instItr->second->getInstPorts().end(); portItr++){
+				if(portItr->second->getPort()->getDirection() == OUT){
+					portItr->second->getNode()->setProp("value", true);
+				}
+			}
+		}
+		if(instItr->second->getName() == "dff"){
+			instItr->second->setProp("ff_value", false);
+			if(debugFlag){cout << "this should be printed only when using stdcell.v" << endl;}
+		}
+		instItr->second->setProp("inQueue", true);
+		gateQ.push(instItr->second);
 	}
 
 	vcdFormatter vcd(cellName + ".vcd", flatCell, globalNodes);
@@ -92,7 +109,9 @@ int main(int argc, char **argv) {
 			flatCell->getNode(name)->setProp("value", val);
 			eventQ.push(make_pair(flatCell->getNode(name), val));
 		}
-		simulateVector(eventQ);
+		if(debugFlag){cout << "before simulate vector" << endl;}
+		simulateVector(eventQ, gateQ);
+		if(debugFlag){cout << "after simulate vector" << endl;}
 		for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
 			string name = nodeItr->second->getName();
 			if(name == "VSS" || name == "VDD"){
@@ -104,6 +123,12 @@ int main(int argc, char **argv) {
 			valByNodeCtx[temp] = currentVal;
 			vcd.changeValue(&temp, currentVal);
 		}
+		for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
+			bool makePrevValue;
+			nodeItr->second->getProp("value", makePrevValue);
+			nodeItr->second->setProp("prev_value", makePrevValue);
+		}
 		vcd.changeTime(t++);
+		if(debugFlag){ cout << t << endl;}
 	}
 }	

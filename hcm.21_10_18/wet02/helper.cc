@@ -1,9 +1,12 @@
 #include "helper.h"
 
-void simulateVector(queue<pair<hcmNode*, bool>>& eventQ){
-        queue<hcmInstance*> gateQ;
+bool debugFlagH = 0;
+
+void simulateVector(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& gateQ){
         while(!eventQ.empty()){
+                if(debugFlagH){cout << "before event processr" << endl;}
                 eventProcessor(eventQ, gateQ);
+                if(debugFlagH){cout << "after event processr" << endl;}
                 if(!gateQ.empty()){
                         gateProcessor(eventQ, gateQ);
                 }
@@ -114,9 +117,32 @@ bool simulateGate(hcmInstance* gate){
                         }
                 }
         } else if (cellName.find("dff") != cellName.npos){
-                printf("dlaglag in the house\n");
+                hcmNode* CLK; hcmNode* D; hcmNode* Q;
+                bool clkRes, dRes, ffVal;
+                gate->getProp("ff_value", ffVal);
+                for(auto portItr = gate->getInstPorts().begin(); portItr != gate->getInstPorts().end(); portItr++){
+                        if(portItr->second->getPort()->getName() == "CLK"){
+                                CLK = portItr->second->getNode();
+                        }
+                        if(portItr->second->getPort()->getName() == "D"){
+                                D = portItr->second->getNode();
+                        }
+                        if(portItr->second->getPort()->getName() == "Q"){
+                                Q = portItr->second->getNode();
+                        }
+                }
+                CLK->getProp("value", clkRes);
+                if(clkRes == false){
+                        //Q->setProp("value", ffVal);
+                        result = ffVal;
+                } else {
+                        D->getProp("prev_value", dRes);
+                        //Q->setProp("value", dRes);
+                        result = dRes;
+                        gate->setProp("ff_value", dRes);
+                }
         } else {
-                printf("bug in simulate gate madafaka\n");
+                if(debugFlagH){printf("bug in simulate gate madafaka\n");}
         }
         
 
