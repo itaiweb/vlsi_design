@@ -117,7 +117,7 @@ bool simulateGate(hcmInstance* gate){
                         }
                 }
         } else if (cellName.find("dff") != cellName.npos){
-                hcmNode* CLK; hcmNode* D; hcmNode* Q;
+                hcmNode* CLK; hcmNode* D;
                 bool clkRes, dRes, ffVal;
                 gate->getProp("ff_value", ffVal);
                 for(auto portItr = gate->getInstPorts().begin(); portItr != gate->getInstPorts().end(); portItr++){
@@ -126,9 +126,6 @@ bool simulateGate(hcmInstance* gate){
                         }
                         if(portItr->second->getPort()->getName() == "D"){
                                 D = portItr->second->getNode();
-                        }
-                        if(portItr->second->getPort()->getName() == "Q"){
-                                Q = portItr->second->getNode();
                         }
                 }
                 CLK->getProp("value", clkRes);
