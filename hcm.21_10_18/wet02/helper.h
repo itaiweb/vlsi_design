@@ -17,5 +17,4 @@ void eventProcessor(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 void gateProcessor(queue<pair<hcmNode*, bool>>&, queue<hcmInstance*>&);
 bool simulateGate(hcmInstance*);
 
-
 #endif

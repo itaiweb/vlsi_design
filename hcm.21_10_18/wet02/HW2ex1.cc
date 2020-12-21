@@ -5,8 +5,6 @@ using namespace std;
 //globals:
 bool verbose = false;
 
-bool debugFlag = 0;
-
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 	int argIdx = 1;
@@ -61,12 +59,12 @@ int main(int argc, char **argv) {
 	hcmCell *flatCell = hcmFlatten(cellName + string("_flat"), topCell, globalNodes);
 	cout << "-I- Top cell flattened" << endl;
 	for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
-		nodeItr->second->setProp("value", false);
-		nodeItr->second->setProp("prev_value", false);
+		nodeItr->second->setProp("value", false); // initialize all nodes to 0.
+		nodeItr->second->setProp("prev_value", false); // save previous value for dff implementation.
 	}
 	queue<hcmInstance*> gateQ;
 	for(auto instItr = flatCell->getInstances().begin(); instItr != flatCell->getInstances().end(); instItr++){
-		//rest ff nor values.
+		// find nor gates in ff and set the out nodes to 1 for logical initilization.
 		if(instItr->second->getName().find("_iwnh_ff") != instItr->second->getName().npos){
 			for(auto portItr = instItr->second->getInstPorts().begin(); portItr != instItr->second->getInstPorts().end(); portItr++){
 				if(portItr->second->getPort()->getDirection() == OUT){
@@ -74,34 +72,38 @@ int main(int argc, char **argv) {
 				}
 			}
 		}
+		// if dff is std cell - keep inner value, between latches.
 		if(instItr->second->getName() == "dff"){
 			instItr->second->setProp("ff_value", false);
-			if(debugFlag){cout << "this should be printed only when using stdcell.v" << endl;}
 		}
+		// property for knowing if gates are in gate queue.
 		instItr->second->setProp("inQueue", true);
-		gateQ.push(instItr->second);
+		gateQ.push(instItr->second); // start by simulating all gates, to get initial value logicaly correct.
 	}
 
 	vcdFormatter vcd(cellName + ".vcd", flatCell, globalNodes);
 	if(!vcd.good()){
-		printf("-E- vcd no good balagan\n");
+		printf("-E- vcd initialization error.\n");
 		exit(1);
 	}
+
 	map<const hcmNodeCtx, bool, cmpNodeCtx> valByNodeCtx;
 	list<const hcmInstance*> noInsts;
+	// initialize context map for vcd communication.
 	for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
 		hcmNodeCtx nodeCtx(noInsts, (*nodeItr).second);
 		valByNodeCtx[nodeCtx] = false;
 	}
+
 	int t = 1;
 	hcmSigVec parser(signalTextFile, vectorTextFile, verbose);
-
 	set<string> signals;
 	parser.getSignals(signals);
 
 	queue<pair<hcmNode*, bool>> eventQ;
 
 	while (parser.readVector() == 0) {
+		// set the inputs to the values from the input vector.
 		for(auto sigItr = signals.begin(); sigItr != signals.end(); sigItr++){
 			string name = (*sigItr);
 			bool val = false;
@@ -109,9 +111,8 @@ int main(int argc, char **argv) {
 			flatCell->getNode(name)->setProp("value", val);
 			eventQ.push(make_pair(flatCell->getNode(name), val));
 		}
-		if(debugFlag){cout << "before simulate vector" << endl;}
 		simulateVector(eventQ, gateQ);
-		if(debugFlag){cout << "after simulate vector" << endl;}
+		// go over all values and write them to the vcd.
 		for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
 			string name = nodeItr->second->getName();
 			if(name == "VSS" || name == "VDD"){
@@ -123,12 +124,12 @@ int main(int argc, char **argv) {
 			valByNodeCtx[temp] = currentVal;
 			vcd.changeValue(&temp, currentVal);
 		}
+		// update previous value for dff implementation in cpp.
 		for(auto nodeItr = flatCell->getNodes().begin(); nodeItr != flatCell->getNodes().end(); nodeItr++){
 			bool makePrevValue;
 			nodeItr->second->getProp("value", makePrevValue);
 			nodeItr->second->setProp("prev_value", makePrevValue);
 		}
 		vcd.changeTime(t++);
-		if(debugFlag){ cout << t << endl;}
 	}
 }	

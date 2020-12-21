@@ -1,23 +1,31 @@
 #include "helper.h"
 
-bool debugFlagH = 0;
-
+//////////////////////////////////////////////////////////////////////////
+// function name: simulateVector
+// description:   simulate a single vector of inputs, as shown in tutorial.
+// inputs: 	  event queue, and gate queue.
+// outputs: 	  none. set the proper values in nodes.
+//////////////////////////////////////////////////////////////////////////
 void simulateVector(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& gateQ){
         while(!eventQ.empty()){
-                if(debugFlagH){cout << "before event processr" << endl;}
                 eventProcessor(eventQ, gateQ);
-                if(debugFlagH){cout << "after event processr" << endl;}
                 if(!gateQ.empty()){
                         gateProcessor(eventQ, gateQ);
                 }
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: eventProcessor
+// description:   implement events and add changed gates to gate queue.
+// inputs: 	  event queue, and gate queue.
+// outputs: 	  none. fills the gate queue.
+//////////////////////////////////////////////////////////////////////////
 void eventProcessor(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& gateQ){
         while(!eventQ.empty()){
                 pair<hcmNode*, bool> event = eventQ.front();
                 eventQ.pop();
-                event.first->setProp("value", event.second);
+                event.first->setProp("value", event.second); // implement change.
                 hcmNode* node = event.first;
                 bool inQueue;
 		for(auto innerInstPort = node->getInstPorts().begin(); innerInstPort != node->getInstPorts().end(); innerInstPort++){
@@ -32,6 +40,13 @@ void eventProcessor(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& ga
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: gateProcessor
+// description:   pop a gate from the gate queue and simulate it. if there
+//                was a change in the output, push the change to event queue.
+// inputs: 	  event queue, and gate queue.
+// outputs: 	  none. fills the event queue.
+//////////////////////////////////////////////////////////////////////////
 void gateProcessor(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& gateQ){
         while(!gateQ.empty()){
                 hcmInstance* gate = gateQ.front();
@@ -50,6 +65,12 @@ void gateProcessor(queue<pair<hcmNode*, bool>>& eventQ, queue<hcmInstance*>& gat
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: simulateGate
+// description:   resuting the logic gate.
+// inputs: 	  gate.
+// outputs: 	  the output of the gate.
+//////////////////////////////////////////////////////////////////////////
 bool simulateGate(hcmInstance* gate){
         bool result;
         string cellName = gate->masterCell()->getName();
@@ -130,18 +151,13 @@ bool simulateGate(hcmInstance* gate){
                 }
                 CLK->getProp("value", clkRes);
                 if(clkRes == false){
-                        //Q->setProp("value", ffVal);
                         result = ffVal;
                 } else {
                         D->getProp("prev_value", dRes);
-                        //Q->setProp("value", dRes);
                         result = dRes;
                         gate->setProp("ff_value", dRes);
                 }
-        } else {
-                if(debugFlagH){printf("bug in simulate gate madafaka\n");}
         }
-        
 
         return result;
 }
