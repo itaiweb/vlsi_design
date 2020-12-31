@@ -1,76 +1,84 @@
 #include "helper.h"
 
-bool makeClause(hcmInstance* gate, vec<Lit>& clauseVec){
-        bool result;
+void addGateClause(hcmInstance* gate, Solver& s){
+        int outNodeNum;
+        vector<int> inputNodesNum;
+        vec<Lit> inputClauseVec;
+        vec<Lit> totalClauseVec;
         string cellName = gate->masterCell()->getName();
+        findInOut(gate, outNodeNum, inputNodesNum);
+
         if(cellName.find("nand") != cellName.npos){
-                result = true;
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = result && nodeVal;
-                        }
+                totalClauseVec.push(~mkLit(outNodeNum));
+                
+                for(unsigned i=0; i < inputNodesNum.size(); i++){
+                        totalClauseVec.push(~mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(mkLit(outNodeNum));
+                        s.addClause(mkLit(outNodeNum), mkLit(inputNodesNum[i]));
+                        cout << "ITAIIIIIIIIIIIIIIIIIIII" << endl;
+                        s.addClause(inputClauseVec);
+                        inputClauseVec.clear();
                 }
-                result = !result;
+                s.addClause(totalClauseVec);
+                totalClauseVec.clear();
+
         } else if (cellName.find("nor") != cellName.npos){
-                result = false;
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = result || nodeVal;
-                        }
+                totalClauseVec.push(mkLit(outNodeNum));
+                for(unsigned i=0; i < inputNodesNum.size(); i++){
+                        totalClauseVec.push(mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(~mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(~mkLit(outNodeNum));
+                        s.addClause(inputClauseVec);
+                        inputClauseVec.clear();
                 }
-                result = !result;
+                s.addClause(totalClauseVec);
+                totalClauseVec.clear();
+
         } else if (cellName.find("xor") != cellName.npos){
-                result = false;
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = result ^ nodeVal;
-                        }
-                }
+                cout << "XOR" << endl;
+                addXorClause(s, inputNodesNum, outNodeNum);
+                cout << "XOR OUT" << endl;
+
         } else if (cellName.find("buffer") != cellName.npos){
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = nodeVal;
-                        }
-                }
+                cout << "BUFF" << endl;
+                addBuffClause(s, inputNodesNum, outNodeNum);
+                cout << "BUFF OUT" << endl;
+
         } else if ((cellName.find("inv") != cellName.npos) || (cellName.find("not") != cellName.npos)){
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = !nodeVal;
-                        }
-                }
+                cout << "INV" << endl;
+                addInvClause(s, inputNodesNum, outNodeNum);
+                cout << "INV OUT" << endl;
+
         } else if (cellName.find("or") != cellName.npos){
-                result = false;
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = result || nodeVal;
-                        }
+                totalClauseVec.push(~mkLit(outNodeNum));
+                for(unsigned i=0; i < inputNodesNum.size(); i++){
+                        totalClauseVec.push(mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(~mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(mkLit(outNodeNum));
+                        s.addClause(inputClauseVec);
+                        inputClauseVec.clear();
                 }
+                s.addClause(totalClauseVec);
+                totalClauseVec.clear();
+
         } else if (cellName.find("and") != cellName.npos){
-                result = true;
-                for(auto inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
-                        if(inputItr->second->getPort()->getDirection() == IN){
-                                bool nodeVal;
-                                inputItr->second->getNode()->getProp("value", nodeVal);
-                                result = result && nodeVal;
-                        }
+                totalClauseVec.push(mkLit(outNodeNum));
+                for(unsigned i=0; i < inputNodesNum.size(); i++){
+                        totalClauseVec.push(~mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(mkLit(inputNodesNum[i]));
+                        inputClauseVec.push(~mkLit(outNodeNum));
+                        s.addClause(inputClauseVec);
+                        inputClauseVec.clear();
                 }
+                s.addClause(totalClauseVec);
+                totalClauseVec.clear();
+
         } else if (cellName.find("dff") != cellName.npos){
                 hcmNode* CLK; hcmNode* D;
                 bool clkRes, dRes, ffVal;
                 gate->getProp("ff_value", ffVal);
-                for(auto portItr = gate->getInstPorts().begin(); portItr != gate->getInstPorts().end(); portItr++){
+                for(map<string, hcmInstPort*>::iterator portItr = gate->getInstPorts().begin(); portItr != gate->getInstPorts().end(); portItr++){
                         if(portItr->second->getPort()->getName() == "CLK"){
                                 CLK = portItr->second->getNode();
                         }
@@ -78,15 +86,75 @@ bool makeClause(hcmInstance* gate, vec<Lit>& clauseVec){
                                 D = portItr->second->getNode();
                         }
                 }
-                CLK->getProp("value", clkRes);
-                if(clkRes == false){
-                        result = ffVal;
-                } else {
-                        D->getProp("prev_value", dRes);
-                        result = dRes;
-                        gate->setProp("ff_value", dRes);
-                }
         }
 
-        return result;
+        return;
+}
+
+void findInOut(hcmInstance* gate, int& outNodeNum, vector<int>& inputNodesNum) {
+        int inputNode;
+        for(map<string, hcmInstPort*>::iterator inputItr = gate->getInstPorts().begin(); inputItr != gate->getInstPorts().end(); inputItr++){
+                if(inputItr->second->getPort()->getDirection() == IN){
+                        inputItr->second->getNode()->getProp("num", inputNode);
+                        inputNodesNum.push_back(inputNode);
+                }
+                if(inputItr->second->getPort()->getDirection() == OUT){
+                        inputItr->second->getProp("num", outNodeNum);
+                }
+        }
+}
+
+void addXorClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
+        vec<Lit> clauseVec;
+        clauseVec.push(~mkLit(inputNodesNum[0]));
+        clauseVec.push(~mkLit(inputNodesNum[1]));
+        clauseVec.push(~mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+
+        clauseVec.push(mkLit(inputNodesNum[0]));
+        clauseVec.push(mkLit(inputNodesNum[1]));
+        clauseVec.push(~mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+
+        clauseVec.push(~mkLit(inputNodesNum[0]));
+        clauseVec.push(mkLit(inputNodesNum[1]));
+        clauseVec.push(mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+
+        clauseVec.push(mkLit(inputNodesNum[0]));
+        clauseVec.push(~mkLit(inputNodesNum[1]));
+        clauseVec.push(mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+}
+
+void addInvClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
+        vec<Lit> clauseVec;
+
+        clauseVec.push(~mkLit(inputNodesNum[0]));
+        clauseVec.push(~mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+
+        clauseVec.push(mkLit(inputNodesNum[0]));
+        clauseVec.push(mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+}
+
+void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
+        vec<Lit> clauseVec;
+
+        clauseVec.push(mkLit(inputNodesNum[0]));
+        clauseVec.push(~mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
+
+        clauseVec.push(~mkLit(inputNodesNum[0]));
+        clauseVec.push(mkLit(outputNodeNum));
+        s.addClause(clauseVec);
+        clauseVec.clear();
 }

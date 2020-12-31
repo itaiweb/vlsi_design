@@ -20,6 +20,10 @@
 
 using namespace Minisat;
 
-bool makeClause(hcmInstance*, vec<Lit>&);
+void addGateClause(hcmInstance*, Solver&);
+void findInOut(hcmInstance*, int&, vector<int>&);
+void addXorClause(Solver&, vector<int>&, int&);
+void addInvClause(Solver&, vector<int>&, int&);
+void addBuffClause(Solver&, vector<int>&, int&);
 
 #endif

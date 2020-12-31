@@ -91,12 +91,13 @@ int main(int argc, char **argv) {
 	hcmCell *flatImpCell = hcmFlatten(implementationCellName + string("_flat"), topImpCell, globalNodes);
 	
 	int nodeNum = 1;
-	for(auto nodeItr = flatSpecCell->getNodes().begin(); nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
+
+	for(map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin(); nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
 		nodeItr->second->setProp("num", nodeNum);
 		nodeNum++;
 	}
 
-	for(auto nodeItr = flatImpCell->getNodes().begin(); nodeItr != flatImpCell->getNodes().end(); nodeItr++){
+	for(map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin(); nodeItr != flatImpCell->getNodes().end(); nodeItr++){
 		nodeItr->second->setProp("num", nodeNum);
 		nodeNum++;
 	}
@@ -104,19 +105,25 @@ int main(int argc, char **argv) {
 	vec<Lit> clauseVec;
 	Solver s;
 
-	for(auto instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
-		makeClause(instItr->second, clauseVec);
-		s.addClause(clauseVec);
-		clauseVec.clear();
+	//add VSS and VSS clauses.
+	int ConstNum;
+	flatSpecCell->getNode("VDD")->getProp("num", ConstNum);
+	clauseVec.push(mkLit(ConstNum));
+	clauseVec.clear();
+	flatSpecCell->getNode("VSS")->getProp("num", ConstNum);
+	clauseVec.push(~mkLit(ConstNum));
+	clauseVec.clear();
+
+	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
+		addGateClause(instItr->second, s);
 	}
 
-	for(auto instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
-		makeClause(instItr->second, clauseVec);
-		s.addClause(clauseVec);
-		clauseVec.clear();
+	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
+		addGateClause(instItr->second, s);
 	}
 
-	for(auto outputItr = flatSpecCell->getPorts().begin(); outputItr != flatSpecCell->getPorts().end(); outputItr++){
+	//TODO: verify ff. assume need to compare all inputs to all ff (all ff with the same name).
+	/*for(vector<hcmPort*>::iterator outputItr = flatSpecCell->getPorts().begin(); outputItr != flatSpecCell->getPorts().end(); outputItr++){
 		hcmPort* impCellPort;
 		int node1Num;
 		int node2Num;
@@ -128,7 +135,9 @@ int main(int argc, char **argv) {
 			node2->getProp("num", node2Num);
 			//makeXORclause(node1Num,node2Num,clauseVec, counter);
 		}
-	}
+	}*/
+	// TODO: add output as clause.
+
 
 
 	// Solver S;
