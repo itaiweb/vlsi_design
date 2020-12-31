@@ -91,19 +91,21 @@ int main(int argc, char **argv) {
 	hcmCell *flatImpCell = hcmFlatten(implementationCellName + string("_flat"), topImpCell, globalNodes);
 	
 	int nodeNum = 1;
+	Solver s;
 
 	for(map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin(); nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
 		nodeItr->second->setProp("num", nodeNum);
+		s.newVar();
 		nodeNum++;
 	}
 
 	for(map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin(); nodeItr != flatImpCell->getNodes().end(); nodeItr++){
 		nodeItr->second->setProp("num", nodeNum);
+		s.newVar();
 		nodeNum++;
 	}
 
 	vec<Lit> clauseVec;
-	Solver s;
 
 	//add VSS and VSS clauses.
 	int ConstNum;

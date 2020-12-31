@@ -15,8 +15,6 @@ void addGateClause(hcmInstance* gate, Solver& s){
                         totalClauseVec.push(~mkLit(inputNodesNum[i]));
                         inputClauseVec.push(mkLit(inputNodesNum[i]));
                         inputClauseVec.push(mkLit(outNodeNum));
-                        s.addClause(mkLit(outNodeNum), mkLit(inputNodesNum[i]));
-                        cout << "ITAIIIIIIIIIIIIIIIIIIII" << endl;
                         s.addClause(inputClauseVec);
                         inputClauseVec.clear();
                 }
@@ -36,19 +34,13 @@ void addGateClause(hcmInstance* gate, Solver& s){
                 totalClauseVec.clear();
 
         } else if (cellName.find("xor") != cellName.npos){
-                cout << "XOR" << endl;
                 addXorClause(s, inputNodesNum, outNodeNum);
-                cout << "XOR OUT" << endl;
 
         } else if (cellName.find("buffer") != cellName.npos){
-                cout << "BUFF" << endl;
                 addBuffClause(s, inputNodesNum, outNodeNum);
-                cout << "BUFF OUT" << endl;
 
         } else if ((cellName.find("inv") != cellName.npos) || (cellName.find("not") != cellName.npos)){
-                cout << "INV" << endl;
                 addInvClause(s, inputNodesNum, outNodeNum);
-                cout << "INV OUT" << endl;
 
         } else if (cellName.find("or") != cellName.npos){
                 totalClauseVec.push(~mkLit(outNodeNum));
