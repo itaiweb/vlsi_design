@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 	}
-
+	
 	hcmCell *topImpCell = impDesign->getCell(implementationCellName);
 	if (!topImpCell) {
 		printf("-E- could not find cell %s\n", implementationCellName.c_str());
@@ -89,57 +89,101 @@ int main(int argc, char **argv) {
 	}
 	
 	hcmCell *flatImpCell = hcmFlatten(implementationCellName + string("_flat"), topImpCell, globalNodes);
-	
-	int nodeNum = 1;
+
+	int nodeNum = 0;
 	Solver s;
+	map<string,int> inputs;
 
 	for(map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin(); nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
+		if(nodeItr->second->getName() == "VSS" || nodeItr->second->getName() == "VDD" || nodeItr->second->getName() == "CLK") {continue;}
 		nodeItr->second->setProp("num", nodeNum);
+		if(nodeItr->second->getPort() != NULL) {
+			if(nodeItr->second->getPort()->getDirection() == IN){
+				inputs[nodeItr->second->getPort()->getName()] = nodeNum;
+			}
+		}
+		for( map<string, hcmInstPort*>::iterator portItr = nodeItr->second->getInstPorts().begin(); 
+							portItr != nodeItr->second->getInstPorts().end(); portItr++){
+			if(portItr->second->getInst()->masterCell()->getName() == "dff"){
+				if(portItr->second->getPort()->getDirection() == OUT){
+					inputs[portItr->second->getInst()->getName()] = nodeNum;
+					cout << "spec cell inst name: " << portItr->second->getInst()->getName() << endl;
+					cout << "spec cell inputs[instname]: " << inputs[portItr->second->getInst()->getName()] << endl;
+					cout << nodeItr->second->getName() << endl;
+				}
+			}
+		}
 		s.newVar();
+		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
 		nodeNum++;
 	}
 
 	for(map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin(); nodeItr != flatImpCell->getNodes().end(); nodeItr++){
+		if(nodeItr->second->getName() == "VSS" || nodeItr->second->getName() == "VDD" || nodeItr->second->getName() == "CLK") {continue;}
+		if(nodeItr->second->getPort() != NULL){
+			if(nodeItr->second->getPort()->getDirection() == IN){
+				string inputName = nodeItr->second->getPort()->getName();
+				if(inputs.find(inputName) != inputs.end()){
+					nodeItr->second->setProp("num", inputs[inputName]);
+					continue;
+				}
+			}
+		}
+		bool foundFF = false;
+		for( map<string, hcmInstPort*>::iterator portItr = nodeItr->second->getInstPorts().begin(); 
+							portItr != nodeItr->second->getInstPorts().end(); portItr++){
+			if(portItr->second->getInst()->masterCell()->getName() == "dff"){
+				if(portItr->second->getPort()->getDirection() == OUT){
+					string instName = portItr->second->getInst()->getName();
+					cout << "imp cell inst name: " << instName << endl;
+					cout << "imp cell inputs[instname]: " << inputs[instName] << endl;
+					cout << nodeItr->second->getName() << endl;
+					nodeItr->second->setProp("num", inputs[instName]);
+					foundFF = true;
+					break;
+				}
+			}
+		}
+		if(foundFF) {continue;}
 		nodeItr->second->setProp("num", nodeNum);
 		s.newVar();
+		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
 		nodeNum++;
 	}
 
 	vec<Lit> clauseVec;
-
+	
 	//add VSS and VSS clauses.
-	int ConstNum;
-	flatSpecCell->getNode("VDD")->getProp("num", ConstNum);
-	clauseVec.push(mkLit(ConstNum));
-	clauseVec.clear();
-	flatSpecCell->getNode("VSS")->getProp("num", ConstNum);
-	clauseVec.push(~mkLit(ConstNum));
-	clauseVec.clear();
+	// int ConstNum;
+	// flatSpecCell->getNode("VDD")->getProp("num", ConstNum);
+	// clauseVec.push(mkLit(ConstNum));
+	// s.addClause(clauseVec);
+	// clauseVec.clear();
+	// flatSpecCell->getNode("VSS")->getProp("num", ConstNum);
+	// clauseVec.push(~mkLit(ConstNum));
+	// s.addClause(clauseVec);
+	// clauseVec.clear();
+
+	//TODO: recognize VDD VSS.
+	//TODO: make cnf.
+	//TODO: make pdf.
+	//TODO: code cosmetics.
 
 	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
 		addGateClause(instItr->second, s);
 	}
-
-	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
+	
+	for(map<string, hcmInstance*>::iterator instItr = flatImpCell->getInstances().begin(); instItr != flatImpCell->getInstances().end(); instItr++){
 		addGateClause(instItr->second, s);
 	}
-
-	//TODO: verify ff. assume need to compare all inputs to all ff (all ff with the same name).
-	/*for(vector<hcmPort*>::iterator outputItr = flatSpecCell->getPorts().begin(); outputItr != flatSpecCell->getPorts().end(); outputItr++){
-		hcmPort* impCellPort;
-		int node1Num;
-		int node2Num;
-		if((*outputItr)->getDirection() == OUT){
-			impCellPort = flatImpCell->getPort((*outputItr)->getName());
-			hcmNode* node1 = impCellPort->owner();
-			hcmNode* node2 = (*outputItr)->owner();
-			node1->getProp("num", node1Num);
-			node2->getProp("num", node2Num);
-			//makeXORclause(node1Num,node2Num,clauseVec, counter);
-		}
-	}*/
-	// TODO: add output as clause.
-
+	
+	makeOutputXor(s, nodeNum, flatSpecCell, flatImpCell);
+	makeFFXor(s, nodeNum, flatSpecCell, flatImpCell);
+	s.addClause(mkLit(nodeNum - 1)); // add final output.
+	
+	s.simplify();
+	int sat = s.solve();
+	printf("is sat? %d\n", sat);
 
 
 	// Solver S;
@@ -154,8 +198,9 @@ int main(int argc, char **argv) {
 	// S.simplify();
 	// int sat = S.solve();
 	// printf("%d\n", sat);
-	// for(int i=0; i<S.nVars(); i++){
-	// 	printf("%d = %s\n", i+1, (S.model[i] == l_Undef) ? "Undef" : (S.model[i] == l_True ? "+" : "-"));
-	// }
+	for(int i=0; i<s.nVars(); i++){
+		printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
+	}
+	return 0;
 	
 }	

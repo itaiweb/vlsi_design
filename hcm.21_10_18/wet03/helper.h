@@ -25,5 +25,7 @@ void findInOut(hcmInstance*, int&, vector<int>&);
 void addXorClause(Solver&, vector<int>&, int&);
 void addInvClause(Solver&, vector<int>&, int&);
 void addBuffClause(Solver&, vector<int>&, int&);
+void makeOutputXor(Solver&, int&, hcmCell*, hcmCell*);
+void makeFFXor(Solver&, int&, hcmCell*, hcmCell*);
 
 #endif
