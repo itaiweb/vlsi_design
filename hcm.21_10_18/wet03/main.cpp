@@ -1,5 +1,7 @@
 #include "helper.h"
 
+int debugCounter = 0;
+
 using namespace std;
 using namespace Minisat;
 
@@ -90,81 +92,16 @@ int main(int argc, char **argv) {
 	
 	hcmCell *flatImpCell = hcmFlatten(implementationCellName + string("_flat"), topImpCell, globalNodes);
 
-	int nodeNum = 0;
+	int nodeNum = 1;
 	Solver s;
 	map<string,int> inputs;
 
-	for(map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin(); nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
-		if(nodeItr->second->getName() == "VSS" || nodeItr->second->getName() == "VDD" || nodeItr->second->getName() == "CLK") {continue;}
-		nodeItr->second->setProp("num", nodeNum);
-		if(nodeItr->second->getPort() != NULL) {
-			if(nodeItr->second->getPort()->getDirection() == IN){
-				inputs[nodeItr->second->getPort()->getName()] = nodeNum;
-			}
-		}
-		for( map<string, hcmInstPort*>::iterator portItr = nodeItr->second->getInstPorts().begin(); 
-							portItr != nodeItr->second->getInstPorts().end(); portItr++){
-			if(portItr->second->getInst()->masterCell()->getName() == "dff"){
-				if(portItr->second->getPort()->getDirection() == OUT){
-					inputs[portItr->second->getInst()->getName()] = nodeNum;
-					cout << "spec cell inst name: " << portItr->second->getInst()->getName() << endl;
-					cout << "spec cell inputs[instname]: " << inputs[portItr->second->getInst()->getName()] << endl;
-					cout << nodeItr->second->getName() << endl;
-				}
-			}
-		}
-		s.newVar();
-		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
-		nodeNum++;
-	}
+	setSpecCellNodes(s, nodeNum, flatSpecCell, inputs);
+	setImpCellNodes(s, nodeNum, flatImpCell, inputs);
 
-	for(map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin(); nodeItr != flatImpCell->getNodes().end(); nodeItr++){
-		if(nodeItr->second->getName() == "VSS" || nodeItr->second->getName() == "VDD" || nodeItr->second->getName() == "CLK") {continue;}
-		if(nodeItr->second->getPort() != NULL){
-			if(nodeItr->second->getPort()->getDirection() == IN){
-				string inputName = nodeItr->second->getPort()->getName();
-				if(inputs.find(inputName) != inputs.end()){
-					nodeItr->second->setProp("num", inputs[inputName]);
-					continue;
-				}
-			}
-		}
-		bool foundFF = false;
-		for( map<string, hcmInstPort*>::iterator portItr = nodeItr->second->getInstPorts().begin(); 
-							portItr != nodeItr->second->getInstPorts().end(); portItr++){
-			if(portItr->second->getInst()->masterCell()->getName() == "dff"){
-				if(portItr->second->getPort()->getDirection() == OUT){
-					string instName = portItr->second->getInst()->getName();
-					cout << "imp cell inst name: " << instName << endl;
-					cout << "imp cell inputs[instname]: " << inputs[instName] << endl;
-					cout << nodeItr->second->getName() << endl;
-					nodeItr->second->setProp("num", inputs[instName]);
-					foundFF = true;
-					break;
-				}
-			}
-		}
-		if(foundFF) {continue;}
-		nodeItr->second->setProp("num", nodeNum);
-		s.newVar();
-		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
-		nodeNum++;
-	}
+	setGlobalNodes(s, nodeNum, flatSpecCell, flatImpCell);
 
-	vec<Lit> clauseVec;
-	
-	//add VSS and VSS clauses.
-	// int ConstNum;
-	// flatSpecCell->getNode("VDD")->getProp("num", ConstNum);
-	// clauseVec.push(mkLit(ConstNum));
-	// s.addClause(clauseVec);
-	// clauseVec.clear();
-	// flatSpecCell->getNode("VSS")->getProp("num", ConstNum);
-	// clauseVec.push(~mkLit(ConstNum));
-	// s.addClause(clauseVec);
-	// clauseVec.clear();
 
-	//TODO: recognize VDD VSS.
 	//TODO: make cnf.
 	//TODO: make pdf.
 	//TODO: code cosmetics.
@@ -177,27 +114,19 @@ int main(int argc, char **argv) {
 		addGateClause(instItr->second, s);
 	}
 	
-	makeOutputXor(s, nodeNum, flatSpecCell, flatImpCell);
+	connectCircuitOutputs(s, nodeNum, flatSpecCell, flatImpCell);
 	makeFFXor(s, nodeNum, flatSpecCell, flatImpCell);
 	s.addClause(mkLit(nodeNum - 1)); // add final output.
-	
+
+	s.toDimacs("DIMACS.cnf");
+	cout << (nodeNum - 1) << endl;	
+	cout << debugCounter << endl;
+
 	s.simplify();
 	int sat = s.solve();
 	printf("is sat? %d\n", sat);
 
 
-	// Solver S;
-	// S.newVar();
-	// S.newVar();
-
-	// vec<Lit> cv;
-	// cv.push( mkLit(1) );
-	// cv.push( ~mkLit(1) );
-	// S.addClause(cv); cv.clear();
-
-	// S.simplify();
-	// int sat = S.solve();
-	// printf("%d\n", sat);
 	for(int i=0; i<s.nVars(); i++){
 		printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
 	}
