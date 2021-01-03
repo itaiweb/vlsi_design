@@ -1,7 +1,5 @@
 #include "helper.h"
 
-int debugCounter = 0;
-
 using namespace std;
 using namespace Minisat;
 
@@ -92,19 +90,17 @@ int main(int argc, char **argv) {
 	
 	hcmCell *flatImpCell = hcmFlatten(implementationCellName + string("_flat"), topImpCell, globalNodes);
 
-	int nodeNum = 1;
+	int nodeNum = 0; // a unique node identifier.
 	Solver s;
-	map<string,int> inputs;
+	map<string,int> inputs; // container to match inputs and FF/D nodes between cells.
 
 	setSpecCellNodes(s, nodeNum, flatSpecCell, inputs);
 	setImpCellNodes(s, nodeNum, flatImpCell, inputs);
-
 	setGlobalNodes(s, nodeNum, flatSpecCell, flatImpCell);
 
 
 	//TODO: make cnf.
 	//TODO: make pdf.
-	//TODO: code cosmetics.
 
 	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
 		addGateClause(instItr->second, s);
@@ -119,8 +115,6 @@ int main(int argc, char **argv) {
 	s.addClause(mkLit(nodeNum - 1)); // add final output.
 
 	s.toDimacs("DIMACS.cnf");
-	cout << (nodeNum - 1) << endl;	
-	cout << debugCounter << endl;
 
 	s.simplify();
 	int sat = s.solve();

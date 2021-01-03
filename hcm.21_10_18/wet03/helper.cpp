@@ -1,5 +1,13 @@
 #include "helper.h"
 
+
+//////////////////////////////////////////////////////////////////////////
+// function name: addGateClause
+// description:   create a clause for each gate, according to the 
+//                gate Tseitin's transformation. add the clause to the solver.
+// inputs: 	  gate, solver.
+// outputs: 	  none.
+//////////////////////////////////////////////////////////////////////////
 void addGateClause(hcmInstance* gate, Solver& s){
         int outNodeNum;
         vector<int> inputNodesNum;
@@ -70,6 +78,15 @@ void addGateClause(hcmInstance* gate, Solver& s){
         return;
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// function name: findInOut
+// description:   Identify the unique identifier of the gate inputs and output.
+// inputs: 	  gate.
+//                inputsNodesNum - a vector of input nodes ID's.
+//                outNodeNum - an int with the output ID. assuming one output.
+// outputs: 	  none.
+//////////////////////////////////////////////////////////////////////////
 void findInOut(hcmInstance* gate, int& outNodeNum, vector<int>& inputNodesNum) {
         int inputNode;
         map<string, hcmInstPort*>::iterator inputItr = gate->getInstPorts().begin();
@@ -84,6 +101,15 @@ void findInOut(hcmInstance* gate, int& outNodeNum, vector<int>& inputNodesNum) {
         }
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// function name: addXorClause
+// description:   make a Xor clause and push to the solver.
+// inputs: 	  s - solver instance.
+//                inputsNodesNum - a vector of input nodes ID's.
+//                outNodeNum - an int with the output ID. assuming one output.
+// outputs: 	  none.
+//////////////////////////////////////////////////////////////////////////
 void addXorClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         vec<Lit> clauseVec;
         clauseVec.push(~mkLit(inputNodesNum[0]));
@@ -111,6 +137,12 @@ void addXorClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         clauseVec.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void addInvClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         
         vec<Lit> clauseVec;
@@ -126,6 +158,12 @@ void addInvClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         clauseVec.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         
         vec<Lit> clauseVec;
@@ -141,6 +179,12 @@ void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         clauseVec.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         int prevXorOutput;
 	bool isFirst = true;
@@ -160,6 +204,12 @@ void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCe
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool& isFirst, int& prevXorOutput){
 
         vector<int> outCompNodes;
@@ -171,7 +221,6 @@ void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool
         node2->getProp("num", pushToVector);
         outCompNodes.push_back(pushToVector);
         s.newVar();
-        debugCounter++;
         addXorClause(s, outCompNodes, nodeNum);
         if(isFirst){
                 prevXorOutput = nodeNum;
@@ -183,12 +232,17 @@ void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool
         inputToXor.push_back(nodeNum);
         nodeNum++;
         s.newVar();
-        debugCounter++;
         addXorClause(s, inputToXor, nodeNum);
         prevXorOutput = nodeNum;
         nodeNum++;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         int prevXorOutput = nodeNum - 1;
 	hcmInstance* impCellffInst;
@@ -218,6 +272,12 @@ void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpC
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void setGlobalNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         
         vec<Lit> clauseVec;
@@ -225,7 +285,6 @@ void setGlobalNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* fla
 	flatImpCell->getNode("VDD")->setProp("num", nodeNum);
         s.newVar();
         clauseVec.push(mkLit(nodeNum));
-        debugCounter++;
 	s.addClause(clauseVec);
 	clauseVec.clear();
 	nodeNum++;
@@ -233,12 +292,17 @@ void setGlobalNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* fla
 	flatImpCell->getNode("VSS")->setProp("num", nodeNum);
 	clauseVec.push(~mkLit(nodeNum));
         s.newVar();
-        debugCounter++;
 	s.addClause(clauseVec);
 	clauseVec.clear();
 	nodeNum++;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void setSpecCellNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, map<string,int>& inputs){
         map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin();
 	for(; nodeItr != flatSpecCell->getNodes().end(); nodeItr++){
@@ -247,12 +311,16 @@ void setSpecCellNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, map<string
 		nodeItr->second->setProp("num", nodeNum);
                 addCommonNodes(nodeItr->second, inputs, nodeNum);
 		s.newVar();
-                debugCounter++;
-		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
 		nodeNum++;
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void addCommonNodes(hcmNode* node, map<string,int>& inputs, int nodeNum){
         if(node->getPort() != NULL) {
                 if(node->getPort()->getDirection() == IN){
@@ -269,6 +337,12 @@ void addCommonNodes(hcmNode* node, map<string,int>& inputs, int nodeNum){
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 void setImpCellNodes(Solver& s, int& nodeNum, hcmCell* flatImpCell, map<string,int>& inputs){
         map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin();
         for(; nodeItr != flatImpCell->getNodes().end(); nodeItr++){
@@ -278,12 +352,16 @@ void setImpCellNodes(Solver& s, int& nodeNum, hcmCell* flatImpCell, map<string,i
 		if(findCommonNodes(nodeItr->second, inputs)) {continue;}
 		nodeItr->second->setProp("num", nodeNum);
 		s.newVar();
-                debugCounter++;
-		cout << "node " << nodeNum << " is " << nodeItr->first << endl;
 		nodeNum++;
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: 
+// description:   
+// inputs: 	  
+// outputs: 	  
+//////////////////////////////////////////////////////////////////////////
 bool findCommonNodes(hcmNode* node, map<string,int>& inputs){
         if(node->getPort() != NULL){
                 if(node->getPort()->getDirection() == IN){

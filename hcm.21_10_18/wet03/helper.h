@@ -23,8 +23,6 @@
 
 using namespace Minisat;
 
-extern int debugCounter;
-
 void addGateClause(hcmInstance*, Solver&);
 void findInOut(hcmInstance*, int&, vector<int>&);
 void addXorClause(Solver&, vector<int>&, int&);
