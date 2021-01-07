@@ -138,10 +138,12 @@ void addXorClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: addInvClause
+// description:   adding an inverter clause to the Solver
+// inputs: 	  s - solver instance.
+//                inputsNodesNum - a vector of input nodes ID's.
+//                outNodeNum - an int with the output ID. assuming one output.
+// outputs: 	  none
 //////////////////////////////////////////////////////////////////////////
 void addInvClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         
@@ -159,10 +161,12 @@ void addInvClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: addBuffClause
+// description:   adding a buffer clause to the Solver
+// inputs: 	  s - solver instance.
+//                inputsNodesNum - a vector of input nodes ID's.
+//                outNodeNum - an int with the output ID. assuming one output.
+// outputs: 	  none	  
 //////////////////////////////////////////////////////////////////////////
 void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
         
@@ -180,10 +184,9 @@ void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: connectCircuitOutputs
+// description:   connect all outputs of the 2 circuits through XOR gates and add all the clauses to Solver.
+//                the first 2 outputs goes to a XOR gate, and then every output is XORed with the previus connection.	  
 //////////////////////////////////////////////////////////////////////////
 void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         int prevXorOutput;
@@ -196,7 +199,7 @@ void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCe
                 
                 hcmPort* outputPort = (flatSpecCell->getPorts())[i];
                 if(outputPort->getDirection() == OUT){
-                        impCellPort = flatImpCell->getPort(outputPort->getName()); // TODO: make sure we only get circuits with same output names.
+                        impCellPort = flatImpCell->getPort(outputPort->getName()); // circuits with same output names.
                         node1 = impCellPort->owner();
                         node2 = outputPort->owner();
                         makeOutputXor(s, node1, node2, nodeNum, isFirst, prevXorOutput);
@@ -205,10 +208,8 @@ void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCe
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: makeOutputXor
+// description:   making a new XOR from 2 outputs of the compared cuircuits  
 //////////////////////////////////////////////////////////////////////////
 void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool& isFirst, int& prevXorOutput){
 
@@ -238,10 +239,8 @@ void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: makeFFXor
+// description:   connect every pair of FF from the 2 circuits to a XOR gate.
 //////////////////////////////////////////////////////////////////////////
 void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         int prevXorOutput = nodeNum - 1;
@@ -273,10 +272,8 @@ void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpC
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: setGlobalNodes
+// description:   set a unique number to the global nodes from the 2 circuits.	  
 //////////////////////////////////////////////////////////////////////////
 void setGlobalNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
         
@@ -298,10 +295,8 @@ void setGlobalNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* fla
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: setSpecCellNodes
+// description:   set a unique number to each node in the spec circuit 	  
 //////////////////////////////////////////////////////////////////////////
 void setSpecCellNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, map<string,int>& inputs){
         map<string, hcmNode*>::iterator nodeItr = flatSpecCell->getNodes().begin();
@@ -316,10 +311,8 @@ void setSpecCellNodes(Solver& s, int& nodeNum, hcmCell* flatSpecCell, map<string
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: addCommonNodes
+// description:   add all inputs and FF output to the common nodes map	  
 //////////////////////////////////////////////////////////////////////////
 void addCommonNodes(hcmNode* node, map<string,int>& inputs, int nodeNum){
         if(node->getPort() != NULL) {
@@ -338,10 +331,8 @@ void addCommonNodes(hcmNode* node, map<string,int>& inputs, int nodeNum){
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: setImpCellNodes
+// description:   setting a unique number to all nodes in Imp circuit. giving common nodes the same number 	  
 //////////////////////////////////////////////////////////////////////////
 void setImpCellNodes(Solver& s, int& nodeNum, hcmCell* flatImpCell, map<string,int>& inputs){
         map<string, hcmNode*>::iterator nodeItr = flatImpCell->getNodes().begin();
@@ -357,10 +348,8 @@ void setImpCellNodes(Solver& s, int& nodeNum, hcmCell* flatImpCell, map<string,i
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: 
-// description:   
-// inputs: 	  
-// outputs: 	  
+// function name: findCommonNodes
+// description:   find a node in the common nodes Map. return true if found.	  
 //////////////////////////////////////////////////////////////////////////
 bool findCommonNodes(hcmNode* node, map<string,int>& inputs){
         if(node->getPort() != NULL){
@@ -384,4 +373,47 @@ bool findCommonNodes(hcmNode* node, map<string,int>& inputs){
         }
 
         return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// function name: isOutputDiff
+// description:   check if there are different outputs between the circuits. including FF	  
+//////////////////////////////////////////////////////////////////////////
+bool isOutputDiff(hcmCell* flatSpecCell, hcmCell* flatImpCell){
+        
+        set<string> specOutputs;
+        set<string> impOutputs;
+        getOutputMap(flatSpecCell, specOutputs);
+        getOutputMap(flatImpCell, impOutputs);
+        
+        if(specOutputs.size() != impOutputs.size()){
+                return true;
+        }
+        set<string>::iterator outItr = specOutputs.begin();
+        for(; outItr != specOutputs.end(); outItr++){
+                if(impOutputs.find(*outItr) == impOutputs.end()){
+                        return true;
+                }
+        }
+
+        return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// function name: getOutputMap
+// description:   generate a Map of outputs for a given FlatCell. including FF	  
+//////////////////////////////////////////////////////////////////////////
+void getOutputMap(hcmCell* flatCell, set<string>& outputs){
+        map<string, hcmInstance*>::iterator instItr = flatCell->getInstances().begin();
+        for(; instItr != flatCell->getInstances().end(); instItr++){
+                if(instItr->second->masterCell()->getName() == "dff"){
+                        outputs.insert(instItr->second->getName());
+                }
+        }
+        
+        for(int i = 0; i < flatCell->getPorts().size(); i++){
+                if((flatCell->getPorts())[i]->getDirection() == OUT){
+                        outputs.insert((flatCell->getPorts())[i]->getName());
+                }
+        }
 }

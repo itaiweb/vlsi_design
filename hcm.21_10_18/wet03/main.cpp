@@ -94,13 +94,16 @@ int main(int argc, char **argv) {
 	Solver s;
 	map<string,int> inputs; // container to match inputs and FF/D nodes between cells.
 
+	// check for different number of outputs or flip-flops
+	if(isOutputDiff(flatSpecCell, flatImpCell)){
+		s.toDimacs("DIMACS.cnf");
+		cout << KRED"Different outputs. Circuits are different!"KNRM << endl;
+		return 0;
+	}
+
 	setSpecCellNodes(s, nodeNum, flatSpecCell, inputs);
 	setImpCellNodes(s, nodeNum, flatImpCell, inputs);
 	setGlobalNodes(s, nodeNum, flatSpecCell, flatImpCell);
-
-
-	//TODO: make cnf.
-	//TODO: make pdf.
 
 	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
 		addGateClause(instItr->second, s);
@@ -117,13 +120,16 @@ int main(int argc, char **argv) {
 	s.toDimacs("DIMACS.cnf");
 
 	s.simplify();
-	int sat = s.solve();
-	printf("is sat? %d\n", sat);
-
-
-	for(int i=0; i<s.nVars(); i++){
-		printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
+	bool sat = s.solve();
+	if(sat){
+		cout << KBLU"SATISFIABLE!"KNRM << endl;
+	} else {
+		cout << KBLU"NOT SATISFIABLE!"KNRM << endl;
 	}
+
+	//for(int i=0; i<s.nVars(); i++){
+	//	printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
+	//}
 	return 0;
 	
 }	

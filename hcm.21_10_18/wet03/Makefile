@@ -5,8 +5,6 @@ MINISAT=$(HCMPATH)/minisat
 # required for adding code of minisat to your program
 MINISAT_OBJS=$(MINISAT)/core/Solver.o $(MINISAT)/utils/Options.o $(MINISAT)/utils/System.o $(HCMPATH)/flattener/flat.o
 
-# -Wall -pedantic 
-
 CXXFLAGS=-ggdb -O0 -fPIC -I$(HCMPATH)/include -I$(MINISAT) -I$(HCMPATH)/flattener
 CFLAGS=-ggdb -O0 -fPIC -I$(HCMPATH)/include -I$(MINISAT) -I$(HCMPATH)/flattener
 CC=g++ -g

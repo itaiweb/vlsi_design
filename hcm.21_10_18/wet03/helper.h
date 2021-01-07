@@ -20,9 +20,13 @@
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_FORMAT_MACROS
-
+#define KBLU  "\x1B[34m"
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
 using namespace Minisat;
 
+bool isOutputDiff(hcmCell*, hcmCell*);
+void getOutputMap(hcmCell*, set<string>&);
 void addGateClause(hcmInstance*, Solver&);
 void findInOut(hcmInstance*, int&, vector<int>&);
 void addXorClause(Solver&, vector<int>&, int&);
