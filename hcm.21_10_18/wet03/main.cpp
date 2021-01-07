@@ -113,9 +113,11 @@ int main(int argc, char **argv) {
 		addGateClause(instItr->second, s);
 	}
 	
-	connectCircuitOutputs(s, nodeNum, flatSpecCell, flatImpCell);
-	makeFFXor(s, nodeNum, flatSpecCell, flatImpCell);
-	s.addClause(mkLit(nodeNum - 1)); // add final output.
+	vector<int> finalOrInputs;
+	connectCircuitOutputs(s, nodeNum, flatSpecCell, flatImpCell, finalOrInputs);
+	makeFFXor(s, nodeNum, flatSpecCell, flatImpCell, finalOrInputs);
+	makeFinalOrClause(s,nodeNum, finalOrInputs);
+	s.addClause(mkLit(nodeNum)); // add final output.
 
 	s.toDimacs("DIMACS.cnf");
 

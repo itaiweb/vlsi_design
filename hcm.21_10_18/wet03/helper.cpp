@@ -188,7 +188,7 @@ void addBuffClause(Solver& s, vector<int>& inputNodesNum, int& outputNodeNum){
 // description:   connect all outputs of the 2 circuits through XOR gates and add all the clauses to Solver.
 //                the first 2 outputs goes to a XOR gate, and then every output is XORed with the previus connection.	  
 //////////////////////////////////////////////////////////////////////////
-void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
+void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell, vector<int>& finalOrInputs){
         int prevXorOutput;
 	bool isFirst = true;
 	hcmPort* impCellPort;
@@ -202,7 +202,10 @@ void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCe
                         impCellPort = flatImpCell->getPort(outputPort->getName()); // circuits with same output names.
                         node1 = impCellPort->owner();
                         node2 = outputPort->owner();
-                        makeOutputXor(s, node1, node2, nodeNum, isFirst, prevXorOutput);
+                        makeOutputXor(s, node1, node2, nodeNum);
+                        // now nodeNum is the xor output ID.
+                        finalOrInputs.push_back(nodeNum);
+                        nodeNum++;
                 }
         }
 }
@@ -211,7 +214,7 @@ void connectCircuitOutputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCe
 // function name: makeOutputXor
 // description:   making a new XOR from 2 outputs of the compared cuircuits  
 //////////////////////////////////////////////////////////////////////////
-void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool& isFirst, int& prevXorOutput){
+void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int nodeNum){
 
         vector<int> outCompNodes;
         vector<int> inputToXor;
@@ -223,27 +226,15 @@ void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int& nodeNum, bool
         outCompNodes.push_back(pushToVector);
         s.newVar();
         addXorClause(s, outCompNodes, nodeNum);
-        if(isFirst){
-                prevXorOutput = nodeNum;
-                nodeNum++;
-                isFirst = false;
-                return;
-        }
-        inputToXor.push_back(prevXorOutput);
-        inputToXor.push_back(nodeNum);
-        nodeNum++;
-        s.newVar();
-        addXorClause(s, inputToXor, nodeNum);
-        prevXorOutput = nodeNum;
-        nodeNum++;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 // function name: makeFFXor
 // description:   connect every pair of FF from the 2 circuits to a XOR gate.
 //////////////////////////////////////////////////////////////////////////
-void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell){
-        int prevXorOutput = nodeNum - 1;
+void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell, vector<int>& finalOrInputs){
+
 	hcmInstance* impCellffInst;
 	hcmNode* node1;
 	hcmNode* node2; 
@@ -266,8 +257,9 @@ void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpC
                         }
                 }
 
-                bool isFirst = false;
-                makeOutputXor(s, node1, node2, nodeNum, isFirst, prevXorOutput);
+                makeOutputXor(s, node1, node2, nodeNum);
+                finalOrInputs.push_back(nodeNum);
+                nodeNum++;
         }
 }
 
@@ -416,4 +408,22 @@ void getOutputMap(hcmCell* flatCell, set<string>& outputs){
                         outputs.insert((flatCell->getPorts())[i]->getName());
                 }
         }
+}
+
+void makeFinalOrClause(Solver& s, int nodeNum, vector<int>& finalOrInputs){
+
+        vec<Lit> totalClauseVec;
+        vec<Lit> inputClauseVec; 
+        s.newVar();
+
+        totalClauseVec.push(~mkLit(nodeNum));
+        for(unsigned i=0; i < finalOrInputs.size(); i++){
+                totalClauseVec.push(mkLit(finalOrInputs[i]));
+                inputClauseVec.push(~mkLit(finalOrInputs[i]));
+                inputClauseVec.push(mkLit(nodeNum));
+                s.addClause(inputClauseVec);
+                inputClauseVec.clear();
+        }
+        s.addClause(totalClauseVec);
+        totalClauseVec.clear();
 }

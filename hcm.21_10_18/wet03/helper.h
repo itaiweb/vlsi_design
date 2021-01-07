@@ -32,13 +32,14 @@ void findInOut(hcmInstance*, int&, vector<int>&);
 void addXorClause(Solver&, vector<int>&, int&);
 void addInvClause(Solver&, vector<int>&, int&);
 void addBuffClause(Solver&, vector<int>&, int&);
-void connectCircuitOutputs(Solver&, int&, hcmCell*, hcmCell*);
-void makeOutputXor(Solver&, hcmNode*, hcmNode*, int&, bool&, int&);
-void makeFFXor(Solver&, int&, hcmCell*, hcmCell*);
+void connectCircuitOutputs(Solver&, int&, hcmCell*, hcmCell*, vector<int>&);
+void makeOutputXor(Solver&, hcmNode*, hcmNode*, int);
+void makeFFXor(Solver&, int&, hcmCell*, hcmCell*, vector<int>&);
 void setGlobalNodes(Solver&, int&, hcmCell*, hcmCell*);
 void setSpecCellNodes(Solver&, int&, hcmCell*, map<string,int>&);
 void setImpCellNodes(Solver&, int&, hcmCell*, map<string,int>&);
 void addCommonNodes(hcmNode*, map<string,int>&, int);
 bool findCommonNodes(hcmNode*, map<string,int>&);
+void makeFinalOrClause(Solver&, int, vector<int>&);
 
 #endif
