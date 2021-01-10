@@ -230,10 +230,10 @@ void makeOutputXor(Solver& s, hcmNode* node1, hcmNode* node2, int nodeNum){
 }
 
 //////////////////////////////////////////////////////////////////////////
-// function name: makeFFXor
-// description:   connect every pair of FF from the 2 circuits to a XOR gate.
+// function name: connectFFInputs
+// description:   connect every pair of FF inputs from the 2 circuits to a XOR gate.
 //////////////////////////////////////////////////////////////////////////
-void makeFFXor(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell, vector<int>& finalOrInputs){
+void connectFFInputs(Solver& s, int& nodeNum, hcmCell* flatSpecCell, hcmCell* flatImpCell, vector<int>& finalOrInputs){
 
 	hcmInstance* impCellffInst;
 	hcmNode* node1;
@@ -363,7 +363,6 @@ bool findCommonNodes(hcmNode* node, map<string,int>& inputs){
                         }
                 }
         }
-
         return false;
 }
 
@@ -377,7 +376,6 @@ bool isOutputDiff(hcmCell* flatSpecCell, hcmCell* flatImpCell){
         set<string> impOutputs;
         getOutputMap(flatSpecCell, specOutputs);
         getOutputMap(flatImpCell, impOutputs);
-        
         if(specOutputs.size() != impOutputs.size()){
                 return true;
         }
@@ -387,7 +385,6 @@ bool isOutputDiff(hcmCell* flatSpecCell, hcmCell* flatImpCell){
                         return true;
                 }
         }
-
         return false;
 }
 
@@ -402,7 +399,6 @@ void getOutputMap(hcmCell* flatCell, set<string>& outputs){
                         outputs.insert(instItr->second->getName());
                 }
         }
-        
         for(int i = 0; i < flatCell->getPorts().size(); i++){
                 if((flatCell->getPorts())[i]->getDirection() == OUT){
                         outputs.insert((flatCell->getPorts())[i]->getName());
@@ -410,6 +406,11 @@ void getOutputMap(hcmCell* flatCell, set<string>& outputs){
         }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// function name: makeFinalOrClause
+// description:   adding an OR clause for all of the XOR outputs. this OR output will be 
+//                the only output for the whole circuit, and the solver will try to satisfy this output. 	  
+//////////////////////////////////////////////////////////////////////////
 void makeFinalOrClause(Solver& s, int nodeNum, vector<int>& finalOrInputs){
 
         vec<Lit> totalClauseVec;

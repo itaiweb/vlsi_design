@@ -97,14 +97,20 @@ int main(int argc, char **argv) {
 	// check for different number of outputs or flip-flops
 	if(isOutputDiff(flatSpecCell, flatImpCell)){
 		s.toDimacs("DIMACS.cnf");
-		cout << KRED"Different outputs. Circuits are different!"KNRM << endl;
+		cout << KRED "Different outputs. Circuits are different!" KNRM << endl;
 		return 0;
 	}
 
-	setSpecCellNodes(s, nodeNum, flatSpecCell, inputs);
+/*
+setting unique value to each node
+*/
+	setSpecCellNodes(s, nodeNum, flatSpecCell, inputs); 
 	setImpCellNodes(s, nodeNum, flatImpCell, inputs);
 	setGlobalNodes(s, nodeNum, flatSpecCell, flatImpCell);
 
+/*
+adding gates clauses to the solver
+*/
 	for(map<string, hcmInstance*>::iterator instItr = flatSpecCell->getInstances().begin(); instItr != flatSpecCell->getInstances().end(); instItr++){
 		addGateClause(instItr->second, s);
 	}
@@ -115,7 +121,7 @@ int main(int argc, char **argv) {
 	
 	vector<int> finalOrInputs;
 	connectCircuitOutputs(s, nodeNum, flatSpecCell, flatImpCell, finalOrInputs);
-	makeFFXor(s, nodeNum, flatSpecCell, flatImpCell, finalOrInputs);
+	connectFFInputs(s, nodeNum, flatSpecCell, flatImpCell, finalOrInputs);
 	makeFinalOrClause(s,nodeNum, finalOrInputs);
 	s.addClause(mkLit(nodeNum)); // add final output.
 
@@ -124,9 +130,9 @@ int main(int argc, char **argv) {
 	s.simplify();
 	bool sat = s.solve();
 	if(sat){
-		cout << KBLU"SATISFIABLE!"KNRM << endl;
+		cout << KBLU "SATISFIABLE!" KNRM << endl;
 	} else {
-		cout << KBLU"NOT SATISFIABLE!"KNRM << endl;
+		cout << KBLU "NOT SATISFIABLE!" KNRM << endl;
 	}
 
 	//for(int i=0; i<s.nVars(); i++){
