@@ -93,10 +93,10 @@ int main(int argc, char **argv) {
 	int nodeNum = 0; // a unique node identifier.
 	Solver s;
 	map<string,int> inputs; // container to match inputs and FF/D nodes between cells.
-
+	string fileName = specCellName + ".cnf";
 	// check for different number of outputs or flip-flops
 	if(isOutputDiff(flatSpecCell, flatImpCell)){
-		s.toDimacs("DIMACS.cnf");
+		s.toDimacs(fileName.c_str());
 		cout << KRED "Different outputs. Circuits are different!" KNRM << endl;
 		return 0;
 	}
@@ -125,19 +125,21 @@ adding gates clauses to the solver
 	makeFinalOrClause(s,nodeNum, finalOrInputs);
 	s.addClause(mkLit(nodeNum)); // add final output.
 
-	s.toDimacs("DIMACS.cnf");
+	s.toDimacs(fileName.c_str());
 
 	s.simplify();
 	bool sat = s.solve();
+
+
+	for(int i=0; i<s.nVars(); i++){
+		printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
+	}
+	
 	if(sat){
 		cout << KBLU "SATISFIABLE!" KNRM << endl;
 	} else {
 		cout << KBLU "NOT SATISFIABLE!" KNRM << endl;
 	}
-
-	//for(int i=0; i<s.nVars(); i++){
-	//	printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
-	//}
 	return 0;
 	
 }	
