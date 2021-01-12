@@ -41,5 +41,6 @@ void setImpCellNodes(Solver&, int&, hcmCell*, map<string,int>&);
 void addCommonNodes(hcmNode*, map<string,int>&, int);
 bool findCommonNodes(hcmNode*, map<string,int>&);
 void makeFinalOrClause(Solver&, int, vector<int>&);
+void printInputs(hcmCell*, hcmCell*, Solver&, map<string,int>&);
 
 #endif

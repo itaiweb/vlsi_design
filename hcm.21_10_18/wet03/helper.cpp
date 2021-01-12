@@ -428,3 +428,38 @@ void makeFinalOrClause(Solver& s, int nodeNum, vector<int>& finalOrInputs){
         s.addClause(totalClauseVec);
         totalClauseVec.clear();
 }
+
+//////////////////////////////////////////////////////////////////////////
+// function name: printInputs
+// description:   printing inputs values in case of SAT 	  
+//////////////////////////////////////////////////////////////////////////
+void printInputs(hcmCell* flatSpecCell, hcmCell* flatImpCell, Solver& s, map<string,int>& inputs){
+        vector<hcmPort*> specPorts = flatSpecCell->getPorts();
+	vector<hcmPort*> impPorts = flatImpCell->getPorts();
+	int nodeIdx;
+        for(int i = 0; i < specPorts.size(); i++){
+                if(specPorts[i]->getDirection() == IN && specPorts[i]->getName() != "clk"){
+                        specPorts[i]->owner()->getProp("num", nodeIdx);
+                        cout << specPorts[i]->getName() << " = ";
+                        if (s.model[nodeIdx] == l_True){
+                                cout << "1" << endl;
+                        }else{
+                                cout << "0" << endl;
+                        }
+                }
+        }
+        for(int i = 0; i < impPorts.size(); i++){
+                if(impPorts[i]->getDirection() == IN && impPorts[i]->getName() != "clk"){
+                        if(inputs.find(impPorts[i]->getName()) != inputs.end()){
+                                continue;
+                        }
+                        impPorts[i]->owner()->getProp("num", nodeIdx);
+                        cout << impPorts[i]->getName() << " = ";
+                        if (s.model[nodeIdx] == l_True){
+                                cout << "1" << endl;
+                        }else{
+                                cout << "0" << endl;
+                        }
+                }	
+        }
+}

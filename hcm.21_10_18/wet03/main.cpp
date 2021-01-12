@@ -130,13 +130,8 @@ adding gates clauses to the solver
 	s.simplify();
 	bool sat = s.solve();
 
-
-
-
 	if(sat){
-		for(int i=0; i<s.nVars(); i++){
-			printf("%d = %s\n", i, (s.model.size() == 0) ? "Undef" : (s.model[i] == l_True ? "+" : "-"));
-		}
+		printInputs(flatSpecCell, flatImpCell, s, inputs);
 		cout << KBLU "SATISFIABLE!" KNRM << endl;
 	} else {
 		cout << KBLU "NOT SATISFIABLE!" KNRM << endl;
